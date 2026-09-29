@@ -1,5 +1,6 @@
 package com.projectguard.backend.risk.rules;
 
+import com.projectguard.backend.common.ContractType;
 import com.projectguard.backend.registry.OwnershipEntry;
 import com.projectguard.backend.registry.OwnershipType;
 import com.projectguard.backend.registry.RegistryAnalysis;
@@ -25,7 +26,7 @@ class OwnerMismatchRuleTest {
     @Test
     void 소유자와_계약상대방이_다르면_신호를_반환한다() {
         RiskAssessmentInput input = new RiskAssessmentInput(
-                registryWithOwner("홍길동"), 100_000_000L, null, "김철수");
+                registryWithOwner("홍길동"), ContractType.JEONSE, 100_000_000L, null, null, "김철수", null);
 
         assertTrue(rule.evaluate(input).isPresent());
     }
@@ -33,7 +34,7 @@ class OwnerMismatchRuleTest {
     @Test
     void 소유자와_계약상대방이_같으면_신호가_없다() {
         RiskAssessmentInput input = new RiskAssessmentInput(
-                registryWithOwner("홍길동"), 100_000_000L, null, "홍길동");
+                registryWithOwner("홍길동"), ContractType.JEONSE, 100_000_000L, null, null, "홍길동", null);
 
         assertTrue(rule.evaluate(input).isEmpty());
     }
@@ -41,7 +42,7 @@ class OwnerMismatchRuleTest {
     @Test
     void 계약상대방을_입력하지_않으면_신호가_없다() {
         RiskAssessmentInput input = new RiskAssessmentInput(
-                registryWithOwner("홍길동"), 100_000_000L, null, null);
+                registryWithOwner("홍길동"), ContractType.JEONSE, 100_000_000L, null, null, null, null);
 
         assertTrue(rule.evaluate(input).isEmpty());
     }

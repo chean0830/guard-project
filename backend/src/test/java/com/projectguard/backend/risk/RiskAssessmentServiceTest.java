@@ -1,5 +1,6 @@
 package com.projectguard.backend.risk;
 
+import com.projectguard.backend.common.ContractType;
 import com.projectguard.backend.registry.OwnershipEntry;
 import com.projectguard.backend.registry.OwnershipType;
 import com.projectguard.backend.registry.RegistryAnalysis;
@@ -38,7 +39,7 @@ class RiskAssessmentServiceTest {
         );
 
         RiskAssessmentInput input = new RiskAssessmentInput(
-                registry, 200_000_000L, 1_000_000_000L, "김철수" // 계약상대방이 소유자와 다름
+                registry, ContractType.JEONSE, 200_000_000L, null, 1_000_000_000L, "김철수", null // 계약상대방이 소유자와 다름
         );
 
         RiskAssessmentResult result = service.assess(input);
@@ -59,7 +60,7 @@ class RiskAssessmentServiceTest {
         );
 
         RiskAssessmentInput input = new RiskAssessmentInput(
-                registry, 300_000_000L, 1_000_000_000L, "홍길동"
+                registry, ContractType.JEONSE, 300_000_000L, null, 1_000_000_000L, "홍길동", null
         );
 
         RiskAssessmentResult result = service.assess(input);

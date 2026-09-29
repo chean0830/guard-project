@@ -1,5 +1,6 @@
 package com.projectguard.backend.risk.rules;
 
+import com.projectguard.backend.common.ContractType;
 import com.projectguard.backend.registry.RegistryAnalysis;
 import com.projectguard.backend.registry.SeizureEntry;
 import com.projectguard.backend.registry.SeizureType;
@@ -26,7 +27,7 @@ class UnresolvedSeizureRuleTest {
                 List.of(new SeizureEntry(1, SeizureType.PROVISIONAL_SEIZURE, "2024년1월1일", false)),
                 0L
         );
-        RiskAssessmentInput input = new RiskAssessmentInput(registry, 100_000_000L, null, null);
+        RiskAssessmentInput input = new RiskAssessmentInput(registry, ContractType.JEONSE, 100_000_000L, null, null, null, null);
 
         Optional<RiskSignal> result = rule.evaluate(input);
 
@@ -42,7 +43,7 @@ class UnresolvedSeizureRuleTest {
                 List.of(new SeizureEntry(1, SeizureType.PROVISIONAL_SEIZURE, "2024년1월1일", true)),
                 0L
         );
-        RiskAssessmentInput input = new RiskAssessmentInput(registry, 100_000_000L, null, null);
+        RiskAssessmentInput input = new RiskAssessmentInput(registry, ContractType.JEONSE, 100_000_000L, null, null, null, null);
 
         assertTrue(rule.evaluate(input).isEmpty());
     }

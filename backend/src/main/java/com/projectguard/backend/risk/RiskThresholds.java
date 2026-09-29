@@ -28,6 +28,14 @@ public final class RiskThresholds {
     /** (활성 선순위채권 + 보증금) / 시세 비율이 이 값 이상이면 주의. */
     public static final double SENIOR_DEBT_PLUS_DEPOSIT_RATIO_CAUTION = 0.70;
 
+    /**
+     * 월세를 보증금으로 환산할 때 쓰는 연 전환율. 주택임대차보호법 제7조의2·시행령 제9조상
+     * 상한(연 1할과 "기준금리+연 2%p" 중 낮은 값)을 그대로 적용한다.
+     * 2026-09-29 확인 기준 한국은행 기준금리 3.00% → 3.00%+2%=5.00% (10%보다 낮으므로 5.00% 적용).
+     * 기준금리가 바뀌면 이 값도 재확인해서 갱신해야 한다.
+     */
+    public static final double MONTHLY_RENT_CONVERSION_RATE = 0.05;
+
     private RiskThresholds() {
     }
 }

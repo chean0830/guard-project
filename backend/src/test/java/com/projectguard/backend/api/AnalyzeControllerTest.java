@@ -1,5 +1,6 @@
 package com.projectguard.backend.api;
 
+import com.projectguard.backend.checklist.ChecklistService;
 import com.projectguard.backend.market.BuildingRegisterService;
 import com.projectguard.backend.market.MarketPriceService;
 import com.projectguard.backend.registry.NotRegistryDocumentException;
@@ -50,6 +51,9 @@ class AnalyzeControllerTest {
     @MockitoBean
     private RiskAssessmentService riskAssessmentService;
 
+    @MockitoBean
+    private ChecklistService checklistService;
+
     private MockMultipartFile samplePdf() {
         return new MockMultipartFile("files", "test.pdf", "application/pdf", "dummy".getBytes());
     }
@@ -69,6 +73,7 @@ class AnalyzeControllerTest {
         mockMvc.perform(multipart("/api/analyze")
                         .file(samplePdf())
                         .param("propertyType", "APARTMENT")
+                        .param("contractType", "JEONSE")
                         .param("depositAmount", "200000000"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.registry.address").value("서울특별시 강남구 테스트로 123"))
@@ -82,6 +87,7 @@ class AnalyzeControllerTest {
     void 파일이_없으면_400을_반환한다() throws Exception {
         mockMvc.perform(multipart("/api/analyze")
                         .param("propertyType", "APARTMENT")
+                        .param("contractType", "JEONSE")
                         .param("depositAmount", "200000000"))
                 .andExpect(status().isBadRequest());
     }
@@ -94,6 +100,7 @@ class AnalyzeControllerTest {
         mockMvc.perform(multipart("/api/analyze")
                         .file(samplePdf())
                         .param("propertyType", "APARTMENT")
+                        .param("contractType", "JEONSE")
                         .param("depositAmount", "200000000"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("등기부등본(등기사항전부증명서)이 아닌 것 같습니다. 등기부등본 PDF를 업로드해주세요."));
@@ -106,6 +113,7 @@ class AnalyzeControllerTest {
         mockMvc.perform(multipart("/api/analyze")
                         .file(samplePdf())
                         .param("propertyType", "APARTMENT")
+                        .param("contractType", "JEONSE")
                         .param("depositAmount", "200000000"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().string("파일을 처리할 수 없습니다. 등기부등본 PDF 또는 촬영 사진을 업로드해주세요."));
@@ -116,6 +124,17 @@ class AnalyzeControllerTest {
         mockMvc.perform(multipart("/api/analyze")
                         .file(samplePdf())
                         .param("propertyType", "STUDIO")
+                        .param("contractType", "JEONSE")
+                        .param("depositAmount", "200000000"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void 계약형태가_잘못되면_400을_반환한다() throws Exception {
+        mockMvc.perform(multipart("/api/analyze")
+                        .file(samplePdf())
+                        .param("propertyType", "APARTMENT")
+                        .param("contractType", "MONTHLY")
                         .param("depositAmount", "200000000"))
                 .andExpect(status().isBadRequest());
     }

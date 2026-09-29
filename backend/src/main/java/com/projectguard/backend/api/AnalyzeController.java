@@ -1,5 +1,8 @@
 package com.projectguard.backend.api;
 
+import com.projectguard.backend.checklist.ChecklistItem;
+import com.projectguard.backend.checklist.ChecklistService;
+import com.projectguard.backend.common.ContractType;
 import com.projectguard.backend.common.PropertyType;
 import com.projectguard.backend.market.BuildingInfo;
 import com.projectguard.backend.market.BuildingRegisterService;
@@ -42,27 +45,33 @@ public class AnalyzeController {
     private final MarketPriceService marketPriceService;
     private final BuildingRegisterService buildingRegisterService;
     private final RiskAssessmentService riskAssessmentService;
+    private final ChecklistService checklistService;
 
     public AnalyzeController(
             RegistryAnalysisService registryAnalysisService,
             MarketPriceService marketPriceService,
             BuildingRegisterService buildingRegisterService,
-            RiskAssessmentService riskAssessmentService
+            RiskAssessmentService riskAssessmentService,
+            ChecklistService checklistService
     ) {
         this.registryAnalysisService = registryAnalysisService;
         this.marketPriceService = marketPriceService;
         this.buildingRegisterService = buildingRegisterService;
         this.riskAssessmentService = riskAssessmentService;
+        this.checklistService = checklistService;
     }
 
     @PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public AnalyzeResponse analyze(
             @RequestParam("files") List<MultipartFile> files,
             @RequestParam("propertyType") PropertyType propertyType,
+            @RequestParam("contractType") ContractType contractType,
             @RequestParam("depositAmount") long depositAmount,
+            @RequestParam(value = "monthlyRent", required = false) Long monthlyRent,
             @RequestParam(value = "buildingName", required = false) String buildingName,
             @RequestParam(value = "exclusiveAreaSqm", required = false) Double exclusiveAreaSqm,
-            @RequestParam(value = "declaredLandlordName", required = false) String declaredLandlordName
+            @RequestParam(value = "declaredLandlordName", required = false) String declaredLandlordName,
+            @RequestParam(value = "declaredAddress", required = false) String declaredAddress
     ) throws IOException {
         if (files == null || files.isEmpty()) {
             throw new NotRegistryDocumentException("등기부등본 파일을 1장 이상 업로드해주세요.");
@@ -81,10 +90,13 @@ public class AnalyzeController {
 
         BuildingInfo buildingInfo = buildingRegisterService.lookup(registry.address()).orElse(null);
 
-        RiskAssessmentResult result = riskAssessmentService.assess(
-                new RiskAssessmentInput(registry, depositAmount, marketPrice, declaredLandlordName));
+        RiskAssessmentResult result = riskAssessmentService.assess(new RiskAssessmentInput(
+                registry, contractType, depositAmount, monthlyRent, marketPrice, declaredLandlordName, declaredAddress));
 
-        return new AnalyzeResponse(registry, marketPrice, buildingInfo, result.signals(), result.hasHighRisk(), DISCLAIMER);
+        List<ChecklistItem> checklist = checklistService.generate(registry, contractType);
+
+        return new AnalyzeResponse(
+                registry, marketPrice, buildingInfo, result.signals(), result.hasHighRisk(), checklist, DISCLAIMER);
     }
 
     @ExceptionHandler(IOException.class)

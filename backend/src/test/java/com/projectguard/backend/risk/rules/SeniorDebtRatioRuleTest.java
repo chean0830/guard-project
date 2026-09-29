@@ -1,5 +1,6 @@
 package com.projectguard.backend.risk.rules;
 
+import com.projectguard.backend.common.ContractType;
 import com.projectguard.backend.registry.RegistryAnalysis;
 import com.projectguard.backend.risk.RiskAssessmentInput;
 import com.projectguard.backend.risk.RiskSeverity;
@@ -24,7 +25,7 @@ class SeniorDebtRatioRuleTest {
     void 선순위채권과_보증금_합이_시세의_80퍼센트_이상이면_HIGH() {
         // 선순위채권 500,000,000 + 보증금 400,000,000 = 900,000,000 / 시세 1,000,000,000 = 90%
         RiskAssessmentInput input = new RiskAssessmentInput(
-                registryWithActiveMortgage(500_000_000L), 400_000_000L, 1_000_000_000L, null);
+                registryWithActiveMortgage(500_000_000L), ContractType.JEONSE, 400_000_000L, null, 1_000_000_000L, null, null);
 
         Optional<RiskSignal> result = rule.evaluate(input);
         assertTrue(result.isPresent());
@@ -35,7 +36,7 @@ class SeniorDebtRatioRuleTest {
     void 선순위채권이_없어도_보증금만으로_비율_계산된다() {
         // 선순위채권 0 + 보증금 300,000,000 = 30% -> 신호 없음
         RiskAssessmentInput input = new RiskAssessmentInput(
-                registryWithActiveMortgage(0L), 300_000_000L, 1_000_000_000L, null);
+                registryWithActiveMortgage(0L), ContractType.JEONSE, 300_000_000L, null, 1_000_000_000L, null, null);
 
         assertTrue(rule.evaluate(input).isEmpty());
     }
@@ -43,7 +44,7 @@ class SeniorDebtRatioRuleTest {
     @Test
     void 시세정보가_없으면_평가하지_않는다() {
         RiskAssessmentInput input = new RiskAssessmentInput(
-                registryWithActiveMortgage(900_000_000L), 400_000_000L, null, null);
+                registryWithActiveMortgage(900_000_000L), ContractType.JEONSE, 400_000_000L, null, null, null, null);
 
         assertTrue(rule.evaluate(input).isEmpty());
     }
