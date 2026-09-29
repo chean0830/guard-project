@@ -201,7 +201,7 @@ export function AnalyzeForm() {
         <button
           type="submit"
           disabled={pending}
-          className="mt-2 rounded-full bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-md shadow-orange-500/30 transition-all hover:scale-[1.01] hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
+          className="mt-2 rounded-full bg-orange-500 px-4 py-3 text-sm font-bold text-white transition-all hover:scale-[1.01] hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
         >
           {pending ? '분석 중...' : '분석하기'}
         </button>
