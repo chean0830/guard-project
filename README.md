@@ -44,7 +44,7 @@ docs/           기획서, 결정사항, 기타 문서
 - [x] REST 엔드포인트에서 시세 조회 ↔ 위험 판단 엔진 연결 (`POST /api/analyze`, 라이브 샘플로 검증 완료)
 - [x] 카메라 촬영 이미지 OCR(Google Cloud Vision) 연동, 실제 이미지로 라이브 검증 완료
 - [x] 여러 장(페이지) 업로드 지원 (`POST /api/analyze`가 `files` 리스트를 받아 순서대로 이어붙여 파싱)
-- [ ] 프론트엔드(Next.js)에서 업로드 화면 → `/api/analyze` 연동
+- [x] 프론트엔드(Next.js) 업로드 화면 ↔ `/api/analyze` 연동 (Server Action 프록시, 위험신호/등기부 결과 화면 포함)
 
 ## 보안/개인정보 원칙
 
