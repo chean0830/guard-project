@@ -13,8 +13,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("http://localhost:3000"),
   title: "Project Guard",
   description: "전/월세 계약 전 등기부등본 위험 요소 분석 서비스",
+  openGraph: {
+    title: "Project Guard",
+    description: "계약하기 전, 등기부등본부터 확인하세요",
+    type: "website",
+    locale: "ko_KR",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Project Guard",
+    description: "계약하기 전, 등기부등본부터 확인하세요",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
