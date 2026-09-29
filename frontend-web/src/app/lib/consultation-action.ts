@@ -1,7 +1,6 @@
 'use server'
 
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 
 const BACKEND_URL = process.env.BACKEND_API_URL ?? 'http://localhost:8080'
 
@@ -26,7 +25,10 @@ export type ConsultationThread = {
   messages: ConsultationMessage[]
 }
 
-export type StartConsultationState = { status: 'idle' } | { status: 'error'; message: string }
+export type StartConsultationState =
+  | { status: 'idle' }
+  | { status: 'error'; message: string }
+  | { status: 'success'; consultationId: number }
 export type SendMessageState = { status: 'idle' } | { status: 'error'; message: string }
 
 async function authHeader(): Promise<Record<string, string>> {
@@ -61,7 +63,7 @@ export async function startConsultationAction(
   }
 
   const data = (await response.json()) as { id: number }
-  redirect(`/consult/${data.id}`)
+  return { status: 'success', consultationId: data.id }
 }
 
 export async function listConsultationsAction(): Promise<ConsultationSummary[]> {
