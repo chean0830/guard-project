@@ -72,11 +72,12 @@ export default function Home() {
         </p>
         <h1 className="mx-auto max-w-2xl text-4xl font-extrabold tracking-tight text-zinc-950 sm:text-5xl dark:text-zinc-50">
           계약하기 전,
-          <br />
-          등기부등본부터 확인하세요
+          <span className="mt-3 block">등기부등본부터 확인하세요</span>
         </h1>
         <p className="mx-auto mt-5 max-w-lg text-base text-zinc-600 sm:text-lg dark:text-zinc-400">
-          복잡한 등기부등본을 업로드하면 위험 요소를 쉬운 말로 알려드립니다.
+          복잡한 등기부등본을 업로드하면
+          <br />
+          위험 요소를 쉬운 말로 알려드립니다.
         </p>
         <a
           href="#analyze"
