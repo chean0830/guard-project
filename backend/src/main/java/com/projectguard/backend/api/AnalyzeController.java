@@ -21,8 +21,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 /**
- * 등기부등본 업로드 → 파싱 → 시세 조회 → 위험 판단을 한 번에 처리하는 엔드포인트.
- * 업로드된 원본 PDF는 메모리에서만 처리하고 디스크에 저장하지 않는다 (비저장 원칙).
+ * 등기부등본 업로드(PDF 또는 카메라 촬영 이미지) → 파싱 → 시세 조회 → 위험 판단을 한 번에 처리하는 엔드포인트.
+ * 업로드된 원본 파일은 메모리에서만 처리하고 디스크에 저장하지 않는다 (비저장 원칙).
  */
 @RestController
 @RequestMapping("/api")
@@ -53,7 +53,7 @@ public class AnalyzeController {
             @RequestParam(value = "exclusiveAreaSqm", required = false) Double exclusiveAreaSqm,
             @RequestParam(value = "declaredLandlordName", required = false) String declaredLandlordName
     ) throws IOException {
-        RegistryAnalysis registry = registryAnalysisService.analyze(file.getBytes());
+        RegistryAnalysis registry = registryAnalysisService.analyze(file.getBytes(), file.getContentType());
 
         Long marketPrice = marketPriceService
                 .lookupMarketPrice(propertyType, registry.address(), buildingName, exclusiveAreaSqm)
@@ -67,8 +67,8 @@ public class AnalyzeController {
 
     @ExceptionHandler(IOException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handleUnreadablePdf(IOException e) {
-        return "PDF 파일을 읽을 수 없습니다. 등기부등본 PDF를 업로드해주세요.";
+    public String handleUnreadableFile(IOException e) {
+        return "파일을 처리할 수 없습니다. 등기부등본 PDF 또는 촬영 사진을 업로드해주세요.";
     }
 
     @ExceptionHandler(NotRegistryDocumentException.class)
