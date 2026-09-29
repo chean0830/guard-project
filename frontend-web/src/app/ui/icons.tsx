@@ -64,6 +64,16 @@ export function CheckBadgeIcon({ className = base }: IconProps) {
   )
 }
 
+export function WarningIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className={className}>
+      <path d="M12 3.5 21.5 20h-19Z" strokeLinejoin="round" />
+      <path d="M12 9.5v4.5" strokeLinecap="round" />
+      <circle cx="12" cy="17" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  )
+}
+
 export function ShieldIcon({ className = base }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className={className}>

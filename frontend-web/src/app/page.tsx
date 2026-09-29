@@ -1,10 +1,29 @@
 import { AnalyzeForm } from '@/app/ui/analyze-form'
-import { BankIcon, CheckBadgeIcon, ScaleIcon, SearchIcon, ShieldIcon, UploadIcon } from '@/app/ui/icons'
+import { BankIcon, CheckBadgeIcon, ScaleIcon, SearchIcon, ShieldIcon, UploadIcon, WarningIcon } from '@/app/ui/icons'
 
 const PAIN_POINTS = [
   '등기부등본을 받아도 무슨 말인지 하나도 모르겠어요',
   '선순위 근저당이 얼마나 있는지 계산이 안 돼요',
   '이 보증금이 시세보다 비싼 건 아닌지 불안해요',
+]
+
+const RISK_SCENARIOS = [
+  {
+    title: '선순위 근저당이 보증금보다 많은 집',
+    description: '경매로 넘어가면 순위에서 밀려 보증금을 다 돌려받지 못할 수 있어요.',
+  },
+  {
+    title: '등기부 소유자와 계약서 임대인이 다른 집',
+    description: '실제 소유자가 아닌 사람과 계약하면 나중에 계약 자체가 문제 될 수 있어요.',
+  },
+  {
+    title: '시세보다 보증금이 지나치게 높은 집',
+    description: '집이 팔려도 보증금을 돌려주기에 부족한 상황이 생길 수 있어요.',
+  },
+  {
+    title: '말소되지 않은 압류·가압류가 남은 집',
+    description: '소유권이 넘어가거나 경매에 부쳐질 위험이 이미 걸려 있는 집이에요.',
+  },
 ]
 
 const VALUE_PROPS = [
@@ -78,10 +97,53 @@ export default function Home() {
         </ul>
       </section>
 
+      {/* Why it matters: stat */}
+      <section className="bg-zinc-950 px-4 py-16 text-center sm:px-8">
+        <p className="text-sm font-semibold text-orange-400">전세사기, 이제 남의 일이 아니에요</p>
+        <p className="mt-4 text-5xl font-extrabold tracking-tight text-white sm:text-6xl">40,936명</p>
+        <p className="mt-3 text-sm text-zinc-400">전세사기 피해자 누적 (국토교통부 발표, 2026년 9월 기준)</p>
+        <p className="mx-auto mt-6 max-w-xl text-sm leading-relaxed text-zinc-300 sm:text-base">
+          이 중 보증금 3억원 이하 피해가 97.6%를 차지해요. 특별히 비싸지 않은, 평범한 전셋집도
+          예외가 아니라는 뜻이에요. &lsquo;나는 괜찮겠지&rsquo;라는 생각이 가장 위험할 수 있어요.
+        </p>
+      </section>
+
+      {/* Why it matters: risk scenarios */}
+      <section className="mx-auto w-full max-w-5xl px-4 py-20 sm:px-8">
+        <h2 className="text-center text-2xl font-bold text-zinc-950 sm:text-3xl dark:text-zinc-50">
+          이런 집은 특히 조심하세요
+        </h2>
+        <p className="mt-3 text-center text-sm text-zinc-500 dark:text-zinc-400">
+          겉으로는 멀쩡해 보여도, 등기부등본을 확인해봐야 알 수 있어요.
+        </p>
+        <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {RISK_SCENARIOS.map(({ title, description }) => (
+            <div
+              key={title}
+              className="flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-5 dark:border-red-900/60 dark:bg-red-950/40"
+            >
+              <WarningIcon className="h-5 w-5 shrink-0 text-red-500" />
+              <div>
+                <h3 className="font-semibold text-red-950 dark:text-red-100">{title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-red-800/80 dark:text-red-200/70">{description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-8 flex justify-center">
+          <a
+            href="#analyze"
+            className="inline-flex items-center justify-center rounded-full bg-zinc-950 px-6 py-3 text-sm font-bold text-white transition-transform hover:scale-105 dark:bg-white dark:text-zinc-950"
+          >
+            내 계약도 확인해보기
+          </a>
+        </div>
+      </section>
+
       {/* Value props */}
       <section className="mx-auto w-full max-w-5xl px-4 py-20 sm:px-8">
         <h2 className="text-center text-2xl font-bold text-zinc-950 sm:text-3xl dark:text-zinc-50">
-          Project Guard가 확인해드려요
+          그래서, Project Guard가 이렇게 확인해드려요
         </h2>
         <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-3">
           {VALUE_PROPS.map(({ icon: Icon, title, description }) => (
