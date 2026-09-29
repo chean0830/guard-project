@@ -27,6 +27,24 @@ const RISK_SCENARIOS = [
   },
 ]
 
+const EVIDENCE_TIERS = [
+  {
+    badge: '사실 확인',
+    badgeClassName: 'bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-900',
+    description: '등기부에 기록된 압류·근저당은 판단 없이 있는 그대로 알려드려요.',
+  },
+  {
+    badge: '법적 기준',
+    badgeClassName: 'bg-blue-600 text-white',
+    description: '주택임대차보호법 시행령 등 실제 법령을 근거로 확인해요.',
+  },
+  {
+    badge: '정부 권고 기준',
+    badgeClassName: 'bg-zinc-500 text-white',
+    description: '국토교통부·HUG가 제시하는 기준을 참고해요 (법적 구속력은 없어요).',
+  },
+]
+
 const VALUE_PROPS = [
   {
     icon: BankIcon,
@@ -160,6 +178,28 @@ export default function Home() {
               <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{description}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Evidence-based trust */}
+      <section className="mx-auto w-full max-w-4xl px-4 pb-20 sm:px-8">
+        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 sm:p-8 dark:border-zinc-800 dark:bg-zinc-900/40">
+          <h2 className="text-center text-lg font-bold text-zinc-950 sm:text-xl dark:text-zinc-50">
+            감이 아니라, 근거로 판단해요
+          </h2>
+          <p className="mt-1 text-center text-sm text-zinc-500 dark:text-zinc-400">
+            위험 신호마다 어떤 근거로 나온 판단인지 함께 보여드려요.
+          </p>
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {EVIDENCE_TIERS.map(({ badge, badgeClassName, description }) => (
+              <div key={badge} className="text-center sm:text-left">
+                <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-bold ${badgeClassName}`}>
+                  {badge}
+                </span>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">{description}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
