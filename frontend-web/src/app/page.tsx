@@ -206,14 +206,16 @@ export default function Home() {
       {/* Lawyer consultation */}
       <section className="bg-zinc-900 px-4 py-16 text-center sm:px-8">
         <p className="text-xl font-bold text-white sm:text-2xl">
-          혹시 보증금(전세금)을 돌려받지 못하고 계신가요?
+          혹시 보증금(전세금)을 돌려받지 못하고 계신가요? 😥
         </p>
         <p className="mt-3 text-sm text-zinc-400">
-          이미 피해를 겪고 계신다면, 등기부등본만으로는 부족할 수 있어요. 전세사기·부동산 사건 경력이
-          있는 변호사와 1:1로 상담해보세요.
+          이미 피해를 겪고 계신다면, 등기부등본만으로는 부족할 수 있어요.
+          <br />
+          Project Guard에 등록된 변호사 중, 전세사기·부동산 사건 경험이 많은 변호사 한 분과
+          무작위로 매칭해드려요. ⚖️
         </p>
         <LawyerCta
-          label="변호사와 무료로 상담하기"
+          label="변호사와 무료로 상담하기 💬"
           className="mt-6 inline-flex items-center justify-center rounded-full bg-orange-500 px-8 py-3.5 text-base font-bold text-white transition-transform hover:scale-105 hover:bg-orange-600"
         />
         <p className="mt-3 text-xs text-zinc-500">* 포트폴리오 데모 상담이며, 실제 변호사 상담이 아닙니다.</p>

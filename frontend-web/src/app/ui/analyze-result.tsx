@@ -100,12 +100,16 @@ export function AnalyzeResultView({ result }: { result: AnalyzeResult }) {
 
           <div className="mt-2 w-full rounded-xl border border-red-300 bg-white p-4 dark:border-red-900 dark:bg-zinc-900">
             <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              혹시 벌써 집을 계약하셨나요?
+              혹시 벌써 집을 계약하셨나요? 🏠
               <br />
-              혹시 보증금(전세금)을 돌려받지 못하고 계시나요?
+              혹시 보증금(전세금)을 돌려받지 못하고 계시나요? 😥
+            </p>
+            <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+              Project Guard에 등록된 변호사 중, 전세사기·부동산 사건 경험이 많은 변호사 한 분과
+              무작위로 매칭해드려요. ⚖️
             </p>
             <LawyerCta
-              label="나에게 꼭 맞는 변호사와 무료로 상담하기"
+              label="나에게 꼭 맞는 변호사와 무료로 상담하기 💬"
               className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-700"
             />
             <p className="mt-2 text-xs text-zinc-400">* 포트폴리오 데모 상담이며, 실제 변호사 상담이 아닙니다.</p>

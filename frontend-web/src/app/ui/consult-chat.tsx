@@ -65,6 +65,7 @@ export function ConsultChat({ lawyer }: { lawyer: Lawyer }) {
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
             {lawyer.firm} · {lawyer.specialties.join(', ')}
           </p>
+          <p className="mt-0.5 text-xs text-emerald-600 dark:text-emerald-400">✅ {lawyer.experience}</p>
         </div>
       </div>
 
