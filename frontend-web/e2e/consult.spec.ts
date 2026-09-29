@@ -1,6 +1,26 @@
 import { expect, test } from '@playwright/test'
 
-test.describe('변호사 상담 데모 채팅', () => {
+const BACKEND_URL = 'http://localhost:8080'
+
+test.beforeEach(async ({ page, request }) => {
+  const email = `e2e-consult-${Date.now()}-${Math.floor(Math.random() * 100000)}@example.com`
+  const signupResponse = await request.post(`${BACKEND_URL}/api/auth/signup`, {
+    data: { email, password: 'password123' },
+  })
+  const { token } = (await signupResponse.json()) as { token: string }
+
+  await page.context().addCookies([
+    {
+      name: 'session',
+      value: token,
+      domain: 'localhost',
+      path: '/',
+      httpOnly: true,
+    },
+  ])
+})
+
+test.describe('변호사 상담 데모 채팅 (로그인 상태)', () => {
   test('매칭된 변호사 정보와 인사말이 보인다', async ({ page }) => {
     await page.goto('/consult/kim-doyoon')
 

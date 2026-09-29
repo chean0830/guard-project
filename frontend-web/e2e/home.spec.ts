@@ -20,12 +20,10 @@ test.describe('메인 페이지', () => {
     await expect(page.getByRole('button', { name: '분석하기' })).toBeVisible()
   })
 
-  test('변호사 무료 상담 버튼을 누르면 무작위 변호사와의 채팅으로 이동한다', async ({ page }) => {
+  test('로그인 전엔 변호사 무료 상담 버튼을 눌러도 로그인 화면으로 이동한다', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: '변호사와 무료로 상담하기 💬' }).click()
 
-    await expect(page).toHaveURL(/\/consult\/.+/)
-    await expect(page.getByText('포트폴리오 데모이며 실제 변호사 상담이 아닙니다')).toBeVisible()
-    await expect(page.getByText(/변호사$/).first()).toBeVisible()
+    await expect(page).toHaveURL(/\/login\?redirect=/)
   })
 })
