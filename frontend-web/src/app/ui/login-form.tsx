@@ -24,17 +24,7 @@ export function LoginForm({ redirectTo, oauthError }: { redirectTo: string; oaut
         </p>
       )}
 
-      <div className="mt-6">
-        <SocialLoginButtons redirectTo={redirectTo} />
-      </div>
-
-      <div className="my-6 flex items-center gap-3 text-xs text-zinc-400">
-        <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-        또는 이메일로 로그인
-        <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-      </div>
-
-      <form action={formAction} className="flex flex-col gap-4">
+      <form action={formAction} className="mt-6 flex flex-col gap-4">
         <div>
           <label htmlFor="email" className="mb-1 block text-sm font-medium">
             이메일
@@ -70,6 +60,14 @@ export function LoginForm({ redirectTo, oauthError }: { redirectTo: string; oaut
         </p>
       )}
 
+      <div className="my-6 flex items-center gap-3 text-xs text-zinc-400">
+        <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+        또는 SNS로 로그인
+        <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+      </div>
+
+      <SocialLoginButtons redirectTo={redirectTo} />
+
       <p className="mt-6 text-center text-sm text-zinc-500">
         아직 계정이 없으신가요?{' '}
         <Link
@@ -79,12 +77,17 @@ export function LoginForm({ redirectTo, oauthError }: { redirectTo: string; oaut
           회원가입
         </Link>
       </p>
-      <p className="mt-2 text-center text-xs text-zinc-400">
-        변호사이신가요?{' '}
-        <Link href="/lawyer/login" className="font-semibold hover:underline">
+
+      <div className="mt-8 rounded-xl border border-zinc-200 p-5 text-center dark:border-zinc-800">
+        <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">변호사이신가요?</p>
+        <p className="mt-1 text-xs text-zinc-500">승인된 변호사 계정으로 로그인해주세요.</p>
+        <Link
+          href="/lawyer/login"
+          className="mt-4 inline-block w-full rounded-full border border-zinc-300 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        >
           변호사 로그인
         </Link>
-      </p>
+      </div>
     </div>
   )
 }
