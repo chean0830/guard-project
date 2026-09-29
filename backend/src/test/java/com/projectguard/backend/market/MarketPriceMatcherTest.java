@@ -10,10 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MarketPriceMatcherTest {
 
-    private final List<AptTradeRecord> records = List.of(
-            new AptTradeRecord("테스트아파트", 500_000_000L, 84.9, 2025, 3, 10, 5, "테스트동"),
-            new AptTradeRecord("테스트아파트", 520_000_000L, 84.9, 2025, 6, 1, 8, "테스트동"),
-            new AptTradeRecord("다른아파트", 300_000_000L, 59.9, 2025, 6, 1, 3, "테스트동")
+    private final List<TradeRecord> records = List.of(
+            new TradeRecord("테스트아파트", 500_000_000L, 84.9, 2025, 3, 10, 5, "테스트동"),
+            new TradeRecord("테스트아파트", 520_000_000L, 84.9, 2025, 6, 1, 8, "테스트동"),
+            new TradeRecord("다른아파트", 300_000_000L, 59.9, 2025, 6, 1, 3, "테스트동")
     );
 
     @Test

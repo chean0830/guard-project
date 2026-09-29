@@ -12,25 +12,25 @@ public final class MarketPriceMatcher {
 
     private static final double AREA_TOLERANCE_SQM = 3.0;
 
-    public static Optional<Long> match(List<AptTradeRecord> records, String complexName, Double targetAreaSqm) {
-        if (records == null || records.isEmpty() || complexName == null || complexName.isBlank()) {
+    public static Optional<Long> match(List<TradeRecord> records, String buildingName, Double targetAreaSqm) {
+        if (records == null || records.isEmpty() || buildingName == null || buildingName.isBlank()) {
             return Optional.empty();
         }
 
-        String normalizedTarget = normalize(complexName);
+        String normalizedTarget = normalize(buildingName);
 
         return records.stream()
-                .filter(r -> r.complexName() != null)
+                .filter(r -> r.buildingName() != null)
                 .filter(r -> {
-                    String normalizedName = normalize(r.complexName());
+                    String normalizedName = normalize(r.buildingName());
                     return normalizedName.contains(normalizedTarget) || normalizedTarget.contains(normalizedName);
                 })
                 .filter(r -> targetAreaSqm == null
                         || Math.abs(r.exclusiveAreaSqm() - targetAreaSqm) <= AREA_TOLERANCE_SQM)
-                .max(Comparator.comparing((AptTradeRecord r) -> r.dealYear())
-                        .thenComparing(AptTradeRecord::dealMonth)
-                        .thenComparing(AptTradeRecord::dealDay))
-                .map(AptTradeRecord::dealAmount);
+                .max(Comparator.comparing((TradeRecord r) -> r.dealYear())
+                        .thenComparing(TradeRecord::dealMonth)
+                        .thenComparing(TradeRecord::dealDay))
+                .map(TradeRecord::dealAmount);
     }
 
     private static String normalize(String s) {

@@ -21,6 +21,7 @@ public class RegistryParser {
 
     private static final Pattern ADDRESS_PATTERN = Pattern.compile("\\[집합건물]\\s*(.+)");
     private static final Pattern UNIQUE_NUMBER_PATTERN = Pattern.compile("고유번호\\s*(\\S+)");
+    private static final Pattern TITLE_PATTERN = Pattern.compile("등기사항전부증명서");
 
     private static final Pattern GAPGU_HEADER = Pattern.compile("갑\\s*구");
     private static final Pattern EULGU_HEADER = Pattern.compile("을\\s*구");
@@ -35,6 +36,11 @@ public class RegistryParser {
     private static final Pattern OWNER_PATTERN = Pattern.compile("소유자\\s+(\\S+)");
 
     public RegistryAnalysis parse(String rawText) {
+        if (!TITLE_PATTERN.matcher(rawText).find()) {
+            throw new NotRegistryDocumentException(
+                    "등기부등본(등기사항전부증명서)이 아닌 것 같습니다. 등기부등본 PDF를 업로드해주세요.");
+        }
+
         String mainBody = cutBeforeSummary(rawText);
         String address = firstMatch(mainBody, ADDRESS_PATTERN);
         String uniqueNumber = firstMatch(mainBody, UNIQUE_NUMBER_PATTERN);

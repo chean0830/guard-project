@@ -9,6 +9,7 @@ import java.nio.file.Files;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -77,5 +78,11 @@ class RegistryParserTest {
 
         assertEquals(150_000_000L, result.totalActiveMortgageAmount(),
                 "말소된 1번(3억)은 제외하고 활성 상태인 3번(1.5억)만 합산되어야 한다");
+    }
+
+    @Test
+    void 등기부등본이_아닌_텍스트는_예외를_던진다() {
+        assertThrows(NotRegistryDocumentException.class,
+                () -> parser.parse("이것은 영수증입니다.\n합계 12,000원"));
     }
 }
