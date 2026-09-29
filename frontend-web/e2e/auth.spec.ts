@@ -6,7 +6,7 @@ function uniqueEmail() {
 
 test.describe('로그인/회원가입', () => {
   test('로그인하지 않고 상담 페이지에 들어가면 로그인 화면으로 이동한다', async ({ page }) => {
-    await page.goto('/consult/kim-doyoon')
+    await page.goto('/consult')
     await expect(page).toHaveURL(/\/login\?redirect=/)
   })
 
@@ -22,8 +22,8 @@ test.describe('로그인/회원가입', () => {
     await expect(page.getByText(`${email}님`)).toBeVisible()
 
     // 로그인 상태면 상담 페이지에 바로 들어갈 수 있다.
-    await page.goto('/consult/kim-doyoon')
-    await expect(page).toHaveURL('/consult/kim-doyoon')
+    await page.goto('/consult')
+    await expect(page).toHaveURL('/consult')
 
     await page.goto('/')
     await page.getByRole('button', { name: '로그아웃' }).click()
@@ -31,7 +31,7 @@ test.describe('로그인/회원가입', () => {
     await expect(page.getByRole('link', { name: '로그인' })).toBeVisible()
 
     // 로그아웃 후엔 다시 상담 페이지 접근이 막힌다.
-    await page.goto('/consult/kim-doyoon')
+    await page.goto('/consult')
     await expect(page).toHaveURL(/\/login\?redirect=/)
   })
 

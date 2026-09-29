@@ -22,7 +22,7 @@ test.describe('메인 페이지', () => {
 
   test('로그인 전엔 변호사 무료 상담 버튼을 눌러도 로그인 화면으로 이동한다', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: '변호사와 무료로 상담하기 💬' }).click()
+    await page.getByRole('link', { name: '변호사와 무료로 상담하기 💬' }).click()
 
     await expect(page).toHaveURL(/\/login\?redirect=/)
   })

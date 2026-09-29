@@ -90,12 +90,20 @@ export default async function Home() {
     <div className="flex flex-1 flex-col bg-white dark:bg-zinc-950">
       <div className="flex justify-end px-4 pt-4 text-sm sm:px-8">
         {sessionEmail ? (
-          <form action={logoutAction} className="flex items-center gap-2 text-zinc-500">
-            <span>{sessionEmail}님</span>
-            <button type="submit" className="font-semibold text-orange-600 hover:underline dark:text-orange-400">
-              로그아웃
-            </button>
-          </form>
+          <div className="flex items-center gap-4 text-zinc-500">
+            <Link href="/consult" className="hover:text-zinc-700 dark:hover:text-zinc-300">
+              내 문의
+            </Link>
+            <Link href="/settings" className="hover:text-zinc-700 dark:hover:text-zinc-300">
+              설정
+            </Link>
+            <form action={logoutAction} className="flex items-center gap-2">
+              <span>{sessionEmail}님</span>
+              <button type="submit" className="font-semibold text-orange-600 hover:underline dark:text-orange-400">
+                로그아웃
+              </button>
+            </form>
+          </div>
         ) : (
           <Link href="/login" className="font-semibold text-orange-600 hover:underline dark:text-orange-400">
             로그인
@@ -277,7 +285,9 @@ export default async function Home() {
           label="변호사와 무료로 상담하기 💬"
           className="mt-6 inline-flex items-center justify-center rounded-full bg-orange-500 px-8 py-3.5 text-base font-bold text-white transition-transform hover:scale-105 hover:bg-orange-600"
         />
-        <p className="mt-3 text-xs text-zinc-500">* 포트폴리오 데모 상담이며, 실제 변호사 상담이 아닙니다.</p>
+        <p className="mt-3 text-xs text-zinc-500">
+          * 포트폴리오 프로젝트 특성상 응답이 늦어지거나 없을 수 있어요. 급한 경우 대한법률구조공단(국번없이 132)을 이용해주세요.
+        </p>
       </section>
 
       <footer className="border-t border-zinc-200 px-4 py-8 text-center text-xs text-zinc-400 dark:border-zinc-800 sm:px-8">
