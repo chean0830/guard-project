@@ -61,7 +61,7 @@ export default function Home() {
         </p>
         <a
           href="#analyze"
-          className="mt-8 inline-flex items-center justify-center rounded-full bg-orange-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-orange-500/30 transition-transform hover:scale-105 hover:bg-orange-600"
+          className="mt-8 inline-flex items-center justify-center rounded-full bg-orange-500 px-8 py-3.5 text-base font-bold text-white transition-transform hover:scale-105 hover:bg-orange-600"
         >
           무료로 확인하기
         </a>
