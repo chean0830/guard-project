@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -49,8 +50,28 @@ public class RegistryImageTextExtractor {
             if (imageResponse.hasError()) {
                 throw new IOException("OCR 처리 중 오류가 발생했습니다: " + imageResponse.getError().getMessage());
             }
-            return imageResponse.getFullTextAnnotation().getText();
+            return mergeRankNumberLines(imageResponse.getFullTextAnnotation().getText());
         }
+    }
+
+    /**
+     * PDFBox는 표의 한 행("1 소유권보존 ...")을 한 줄로 뽑아내지만, Vision OCR은 셀 단위로 줄이 쪼개져
+     * 순위번호("1")와 등기목적("소유권보존")이 서로 다른 줄로 나뉘는 경우가 많다. RegistryParser의
+     * 항목 인식 규칙(ENTRY_START)은 "순위번호 + 내용"이 한 줄에 있다고 가정하므로, 순위번호만 단독으로
+     * 있는 줄을 다음 줄과 합쳐 PDFBox 출력과 같은 모양으로 맞춰준다.
+     */
+    private String mergeRankNumberLines(String rawText) {
+        String[] rawLines = rawText.split("\\r?\\n");
+        List<String> merged = new ArrayList<>();
+        for (int i = 0; i < rawLines.length; i++) {
+            String line = rawLines[i].trim();
+            if (line.matches("\\d{1,3}") && i + 1 < rawLines.length && !rawLines[i + 1].trim().isEmpty()) {
+                merged.add(line + " " + rawLines[++i].trim());
+            } else {
+                merged.add(line);
+            }
+        }
+        return String.join("\n", merged);
     }
 
     private GoogleCredentials loadCredentials() throws IOException {

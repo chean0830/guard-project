@@ -23,8 +23,10 @@ public class RegistryParser {
     private static final Pattern UNIQUE_NUMBER_PATTERN = Pattern.compile("고유번호\\s*(\\S+)");
     private static final Pattern TITLE_PATTERN = Pattern.compile("등기사항전부증명서");
 
-    private static final Pattern GAPGU_HEADER = Pattern.compile("갑\\s*구");
-    private static final Pattern EULGU_HEADER = Pattern.compile("을\\s*구");
+    // OCR(카메라 촬영)은 "【 갑 구 】" 같은 괄호 문구를 "갑"/"구]"처럼 줄바꿈으로 쪼개 인식하는 경우가 있어,
+    // 옆에 항상 같이 나오는 고정 부제("소유권에 관한 사항" 등)도 보조 판별 기준으로 함께 둔다.
+    private static final Pattern GAPGU_HEADER = Pattern.compile("갑\\s*구|소유권에\\s*관한\\s*사항");
+    private static final Pattern EULGU_HEADER = Pattern.compile("을\\s*구|소유권\\s*이외의\\s*권리에\\s*관한\\s*사항");
     private static final Pattern SUMMARY_MARKER = Pattern.compile("주요\\s*등기사항\\s*요약");
 
     private static final Pattern ENTRY_START = Pattern.compile("^(\\d{1,3})\\s+(\\S.*)$");

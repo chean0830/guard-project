@@ -5,6 +5,7 @@ import com.projectguard.backend.market.MarketPriceService;
 import com.projectguard.backend.registry.NotRegistryDocumentException;
 import com.projectguard.backend.registry.RegistryAnalysis;
 import com.projectguard.backend.registry.RegistryAnalysisService;
+import com.projectguard.backend.registry.UploadedPage;
 import com.projectguard.backend.risk.RiskAssessmentInput;
 import com.projectguard.backend.risk.RiskAssessmentResult;
 import com.projectguard.backend.risk.RiskAssessmentService;
@@ -19,10 +20,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * 등기부등본 업로드(PDF 또는 카메라 촬영 이미지) → 파싱 → 시세 조회 → 위험 판단을 한 번에 처리하는 엔드포인트.
- * 업로드된 원본 파일은 메모리에서만 처리하고 디스크에 저장하지 않는다 (비저장 원칙).
+ * 등기부등본 업로드(PDF 한 장 또는 카메라 촬영 이미지 여러 장) → 파싱 → 시세 조회 → 위험 판단을
+ * 한 번에 처리하는 엔드포인트. 업로드된 원본 파일은 메모리에서만 처리하고 디스크에 저장하지 않는다 (비저장 원칙).
+ * 프론트엔드(Next.js)는 브라우저에서 이 엔드포인트를 직접 호출하지 않고, 서버 사이드(Server Action)에서
+ * 프록시로 호출한다 — CORS 설정이 필요 없고 백엔드 주소를 클라이언트에 노출하지 않는다.
  */
 @RestController
 @RequestMapping("/api")
@@ -46,14 +51,23 @@ public class AnalyzeController {
 
     @PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public AnalyzeResponse analyze(
-            @RequestParam("file") MultipartFile file,
+            @RequestParam("files") List<MultipartFile> files,
             @RequestParam("propertyType") PropertyType propertyType,
             @RequestParam("depositAmount") long depositAmount,
             @RequestParam(value = "buildingName", required = false) String buildingName,
             @RequestParam(value = "exclusiveAreaSqm", required = false) Double exclusiveAreaSqm,
             @RequestParam(value = "declaredLandlordName", required = false) String declaredLandlordName
     ) throws IOException {
-        RegistryAnalysis registry = registryAnalysisService.analyze(file.getBytes(), file.getContentType());
+        if (files == null || files.isEmpty()) {
+            throw new NotRegistryDocumentException("등기부등본 파일을 1장 이상 업로드해주세요.");
+        }
+
+        List<UploadedPage> pages = new ArrayList<>();
+        for (MultipartFile file : files) {
+            pages.add(new UploadedPage(file.getBytes(), file.getContentType()));
+        }
+
+        RegistryAnalysis registry = registryAnalysisService.analyze(pages);
 
         Long marketPrice = marketPriceService
                 .lookupMarketPrice(propertyType, registry.address(), buildingName, exclusiveAreaSqm)

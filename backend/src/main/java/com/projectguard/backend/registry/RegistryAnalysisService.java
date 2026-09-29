@@ -3,6 +3,7 @@ package com.projectguard.backend.registry;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.List;
 
 @Service
 public class RegistryAnalysisService {
@@ -22,17 +23,19 @@ public class RegistryAnalysisService {
     }
 
     /**
-     * 업로드된 등기부등본 파일(PDF 또는 카메라 촬영 이미지) 바이트를 분석한다.
+     * 업로드된 등기부등본 페이지들(PDF 한 장 또는 촬영 이미지 여러 장)을 분석한다.
+     * 각 페이지에서 추출한 텍스트를 업로드 순서대로 이어붙인 뒤 하나의 문서로 파싱한다 —
+     * 표제부/갑구/을구가 페이지마다 나뉘어 촬영된 경우에도 순서대로 올리면 정상 인식된다.
      * 원본 파일은 이 메서드 호출 전후로 디스크에 저장하지 않는다 (비저장 원칙).
-     *
-     * @param contentType 업로드된 파일의 MIME 타입. "image/"로 시작하면 Google Vision OCR을,
-     *                    그 외(PDF 등)에는 PDFBox 텍스트 추출을 사용한다.
      */
-    public RegistryAnalysis analyze(byte[] fileBytes, String contentType) throws IOException {
-        boolean isImage = contentType != null && contentType.startsWith("image/");
-        String rawText = isImage
-                ? imageTextExtractor.extractText(fileBytes)
-                : pdfTextExtractor.extractText(fileBytes);
-        return parser.parse(rawText);
+    public RegistryAnalysis analyze(List<UploadedPage> pages) throws IOException {
+        StringBuilder combinedText = new StringBuilder();
+        for (UploadedPage page : pages) {
+            String text = page.isImage()
+                    ? imageTextExtractor.extractText(page.bytes())
+                    : pdfTextExtractor.extractText(page.bytes());
+            combinedText.append(text).append('\n');
+        }
+        return parser.parse(combinedText.toString());
     }
 }
