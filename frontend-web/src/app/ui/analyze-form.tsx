@@ -45,14 +45,15 @@ export function AnalyzeForm() {
   const [state, formAction, pending] = useActionState(analyzeAction, initialState)
   const [files, setFiles] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
   const fileInputId = useId()
+  const cameraInputId = useId()
 
   function addFiles(newFiles: FileList | null) {
     if (!newFiles || newFiles.length === 0) return
     setFiles((prev) => [...prev, ...Array.from(newFiles)])
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (cameraInputRef.current) cameraInputRef.current.value = ''
   }
 
   function removeFile(index: number) {
@@ -83,6 +84,7 @@ export function AnalyzeForm() {
           <p className="mb-2 text-xs text-zinc-500">
             PDF는 그대로 올려주시고, 사진으로 찍으셨다면 표제부·갑구·을구가 나온 페이지를 순서대로 담아주세요.
           </p>
+
           <input
             ref={fileInputRef}
             id={fileInputId}
@@ -90,8 +92,35 @@ export function AnalyzeForm() {
             multiple
             accept="application/pdf,image/*"
             onChange={(e) => addFiles(e.target.files)}
-            className="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-orange-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-orange-600"
+            className="hidden"
           />
+          <input
+            ref={cameraInputRef}
+            id={cameraInputId}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={(e) => addFiles(e.target.files)}
+            className="hidden"
+          />
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+            >
+              파일에서 선택
+            </button>
+            <button
+              type="button"
+              onClick={() => cameraInputRef.current?.click()}
+              className="rounded-full border border-orange-500 px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50 dark:text-orange-400 dark:hover:bg-orange-500/10"
+            >
+              카메라로 촬영
+            </button>
+          </div>
+
           {files.length > 0 && (
             <ul className="mt-3 flex flex-col gap-1.5">
               {files.map((file, index) => (
