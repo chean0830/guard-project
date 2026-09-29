@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -89,5 +90,11 @@ public class AnalyzeController {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public String handleNotRegistryDocument(NotRegistryDocumentException e) {
         return e.getMessage();
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
+    public String handleTooLarge(MaxUploadSizeExceededException e) {
+        return "파일 용량이 너무 큽니다. 파일 한 장당 20MB, 전체 100MB 이하로 올려주세요.";
     }
 }
