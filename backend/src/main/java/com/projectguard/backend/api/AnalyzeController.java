@@ -1,6 +1,8 @@
 package com.projectguard.backend.api;
 
 import com.projectguard.backend.common.PropertyType;
+import com.projectguard.backend.market.BuildingInfo;
+import com.projectguard.backend.market.BuildingRegisterService;
 import com.projectguard.backend.market.MarketPriceService;
 import com.projectguard.backend.registry.NotRegistryDocumentException;
 import com.projectguard.backend.registry.RegistryAnalysis;
@@ -38,15 +40,18 @@ public class AnalyzeController {
 
     private final RegistryAnalysisService registryAnalysisService;
     private final MarketPriceService marketPriceService;
+    private final BuildingRegisterService buildingRegisterService;
     private final RiskAssessmentService riskAssessmentService;
 
     public AnalyzeController(
             RegistryAnalysisService registryAnalysisService,
             MarketPriceService marketPriceService,
+            BuildingRegisterService buildingRegisterService,
             RiskAssessmentService riskAssessmentService
     ) {
         this.registryAnalysisService = registryAnalysisService;
         this.marketPriceService = marketPriceService;
+        this.buildingRegisterService = buildingRegisterService;
         this.riskAssessmentService = riskAssessmentService;
     }
 
@@ -74,10 +79,12 @@ public class AnalyzeController {
                 .lookupMarketPrice(propertyType, registry.address(), buildingName, exclusiveAreaSqm)
                 .orElse(null);
 
+        BuildingInfo buildingInfo = buildingRegisterService.lookup(registry.address()).orElse(null);
+
         RiskAssessmentResult result = riskAssessmentService.assess(
                 new RiskAssessmentInput(registry, depositAmount, marketPrice, declaredLandlordName));
 
-        return new AnalyzeResponse(registry, marketPrice, result.signals(), result.hasHighRisk(), DISCLAIMER);
+        return new AnalyzeResponse(registry, marketPrice, buildingInfo, result.signals(), result.hasHighRisk(), DISCLAIMER);
     }
 
     @ExceptionHandler(IOException.class)

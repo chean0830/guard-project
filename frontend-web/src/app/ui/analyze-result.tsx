@@ -81,7 +81,7 @@ function EntryRow({ label, cancelled, children }: { label: string; cancelled: bo
 }
 
 export function AnalyzeResultView({ result }: { result: AnalyzeResult }) {
-  const { registry, marketPrice, riskSignals, hasHighRisk, disclaimer } = result
+  const { registry, marketPrice, buildingInfo, riskSignals, hasHighRisk, disclaimer } = result
   const sortedSignals = [...riskSignals].sort(
     (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity],
   )
@@ -177,6 +177,38 @@ export function AnalyzeResultView({ result }: { result: AnalyzeResult }) {
             <dd>{formatWon(registry.totalActiveMortgageAmount)}</dd>
           </div>
         </dl>
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-lg font-semibold">건축물대장 정보</h2>
+        {buildingInfo ? (
+          <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-zinc-500">건물명</dt>
+              <dd>{buildingInfo.buildingName ?? '정보 없음'}</dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500">주용도</dt>
+              <dd>{buildingInfo.mainPurpose ?? '정보 없음'}</dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500">구조</dt>
+              <dd>{buildingInfo.structureType ?? '정보 없음'}</dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500">사용승인일</dt>
+              <dd>{buildingInfo.useApprovalDate ?? '정보 없음'}</dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500">연면적</dt>
+              <dd>{buildingInfo.totalFloorAreaSqm !== null ? `${buildingInfo.totalFloorAreaSqm}㎡` : '정보 없음'}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="text-sm text-zinc-500">
+            건축물대장에서 조회되지 않았습니다. 등록되지 않은 건물이거나 주소 조회에 실패했을 수 있어요.
+          </p>
+        )}
       </section>
 
       <section>

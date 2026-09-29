@@ -26,7 +26,10 @@ public class JusoAddressResponseParser {
             return Optional.of(new JusoAddressResult(
                     first.path("roadAddr").asText(null),
                     first.path("admCd").asText(null),
-                    first.path("bdNm").asText(null)
+                    first.path("bdNm").asText(null),
+                    first.path("mtYn").asText(null),
+                    first.path("lnbrMnnm").asText(null),
+                    first.path("lnbrSlno").asText(null)
             ));
         } catch (Exception e) {
             return Optional.empty();

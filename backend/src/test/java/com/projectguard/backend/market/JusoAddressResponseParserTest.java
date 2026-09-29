@@ -30,6 +30,18 @@ class JusoAddressResponseParserTest {
     }
 
     @Test
+    void 건축물대장_조회에_필요한_지번_정보도_함께_파싱한다() throws IOException {
+        Optional<JusoAddressResult> result = parser.parseFirst(loadFixture());
+
+        assertTrue(result.isPresent());
+        assertEquals("12710", result.get().sigunguCd());
+        assertEquals("33530", result.get().bjdongCd());
+        assertEquals("0", result.get().platGbCd());
+        assertEquals("0476", result.get().bun());
+        assertEquals("0000", result.get().ji());
+    }
+
+    @Test
     void 결과가_없으면_empty를_반환한다() {
         String emptyResponse = "{\"results\":{\"common\":{\"totalCount\":\"0\"},\"juso\":[]}}";
         assertTrue(parser.parseFirst(emptyResponse).isEmpty());

@@ -3,6 +3,7 @@ package com.projectguard.backend.market;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.util.Optional;
 
@@ -28,17 +29,22 @@ public class JusoAddressClient {
     }
 
     public Optional<JusoAddressResult> search(String keyword) {
-        String body = restClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .scheme("https").host("www.juso.go.kr").path("/addrlink/addrLinkApi.do")
-                        .queryParam("confmKey", apiKey)
-                        .queryParam("currentPage", 1)
-                        .queryParam("countPerPage", 1)
-                        .queryParam("keyword", keyword)
-                        .queryParam("resultType", "json")
-                        .build())
-                .retrieve()
-                .body(String.class);
+        String body;
+        try {
+            body = restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .scheme("https").host("www.juso.go.kr").path("/addrlink/addrLinkApi.do")
+                            .queryParam("confmKey", apiKey)
+                            .queryParam("currentPage", 1)
+                            .queryParam("countPerPage", 1)
+                            .queryParam("keyword", keyword)
+                            .queryParam("resultType", "json")
+                            .build())
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientException e) {
+            return Optional.empty();
+        }
 
         return parser.parseFirst(body);
     }

@@ -33,6 +33,14 @@ export type RegistryAnalysis = {
   totalActiveMortgageAmount: number
 }
 
+export type BuildingInfo = {
+  buildingName: string | null
+  mainPurpose: string | null
+  structureType: string | null
+  useApprovalDate: string | null
+  totalFloorAreaSqm: number | null
+}
+
 export type RiskSignal = {
   code: string
   title: string
@@ -45,6 +53,7 @@ export type RiskSignal = {
 export type AnalyzeResult = {
   registry: RegistryAnalysis
   marketPrice: number | null
+  buildingInfo: BuildingInfo | null
   riskSignals: RiskSignal[]
   hasHighRisk: boolean
   disclaimer: string

@@ -1,6 +1,7 @@
 package com.projectguard.backend.market;
 
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 import java.net.URI;
 import java.util.List;
@@ -39,20 +40,27 @@ abstract class AbstractTradeClient implements TradeClient {
     @Override
     public List<TradeRecord> fetchTrades(String lawdCd, String dealYearMonth) {
         String url = endpoint + "/" + operation;
-        String body = restClient.get()
-                .uri(uriBuilder -> {
-                    URI uri = URI.create(url);
-                    return uriBuilder
-                            .scheme(uri.getScheme()).host(uri.getHost()).path(uri.getPath())
-                            .queryParam("serviceKey", apiKey)
-                            .queryParam("LAWD_CD", lawdCd)
-                            .queryParam("DEAL_YMD", dealYearMonth)
-                            .queryParam("_type", "json")
-                            .queryParam("numOfRows", 500)
-                            .build();
-                })
-                .retrieve()
-                .body(String.class);
+        String body;
+        try {
+            body = restClient.get()
+                    .uri(uriBuilder -> {
+                        URI uri = URI.create(url);
+                        return uriBuilder
+                                .scheme(uri.getScheme()).host(uri.getHost()).path(uri.getPath())
+                                .queryParam("serviceKey", apiKey)
+                                .queryParam("LAWD_CD", lawdCd)
+                                .queryParam("DEAL_YMD", dealYearMonth)
+                                .queryParam("_type", "json")
+                                .queryParam("numOfRows", 500)
+                                .build();
+                    })
+                    .retrieve()
+                    .body(String.class);
+        } catch (RestClientException e) {
+            // 국토교통부 API가 일시적으로 응답하지 않아도 시세 비교는 "조회 실패"로 건너뛸 뿐,
+            // 등기부 분석 자체가 실패해서는 안 된다.
+            return List.of();
+        }
 
         return parser.parse(body, buildingNameField);
     }

@@ -1,5 +1,6 @@
 package com.projectguard.backend.api;
 
+import com.projectguard.backend.market.BuildingRegisterService;
 import com.projectguard.backend.market.MarketPriceService;
 import com.projectguard.backend.registry.NotRegistryDocumentException;
 import com.projectguard.backend.registry.RegistryAnalysis;
@@ -42,6 +43,9 @@ class AnalyzeControllerTest {
 
     @MockitoBean
     private MarketPriceService marketPriceService;
+
+    @MockitoBean
+    private BuildingRegisterService buildingRegisterService;
 
     @MockitoBean
     private RiskAssessmentService riskAssessmentService;
