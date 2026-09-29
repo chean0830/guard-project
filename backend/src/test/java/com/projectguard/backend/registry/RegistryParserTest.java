@@ -85,4 +85,42 @@ class RegistryParserTest {
         assertThrows(NotRegistryDocumentException.class,
                 () -> parser.parse("이것은 영수증입니다.\n합계 12,000원"));
     }
+
+    /**
+     * OCR(카메라 촬영)은 표의 우측 컬럼(채무자/근저당권자)을 좌측 컬럼과 다른 블록으로 묶어,
+     * 그 값이 엉뚱하게 뒤따르는 말소 항목의 블록에 붙어버리는 경우가 있다 (docs/결정사항.md 15번).
+     * 1번 근저당권설정의 채무자/근저당권자가 2번(말소) 항목 뒤에 붙어 나오는 상황을 재현한다.
+     */
+    @Test
+    void 채무자_근저당권자가_뒤_항목에_붙어나와도_순서로_보완한다() {
+        String text = String.join("\n",
+                "등기사항전부증명서(말소사항 포함)",
+                "[집합건물] 테스트 주소",
+                "고유번호 0000-0000-000000",
+                "【 갑 구 】 (소유권에 관한 사항)",
+                "1 소유권보존 2020년1월1일 제1호 소유자 테스트인",
+                "【 을 구 】 (소유권 이외의 권리에 관한 사항)",
+                "1 근저당권설정 2020년1월1일 제100호 2020년1월1일 설정계약 채권최고액 금100,000,000원",
+                "2 1번근저당권설정등기말소 2021년1월1일 제200호 해지",
+                "채무자 채무자A",
+                "근저당권자 근저당권자B",
+                "3 근저당권설정 2022년1월1일 제300호 2022년1월1일 설정계약 채권최고액 금200,000,000원",
+                "채무자 채무자C",
+                "근저당권자 근저당권자D");
+
+        RegistryAnalysis result = parser.parse(text);
+
+        assertEquals(2, result.mortgages().size());
+        MortgageEntry first = result.mortgages().get(0);
+        assertEquals(1, first.rank());
+        assertEquals("채무자A", first.debtorName(), "블록 분리로 비어있던 채무자를 전체 스캔으로 보완해야 한다");
+        assertEquals("근저당권자B", first.mortgageeName());
+        assertTrue(first.cancelled());
+
+        MortgageEntry second = result.mortgages().get(1);
+        assertEquals(3, second.rank());
+        assertEquals("채무자C", second.debtorName(), "이미 올바르게 파싱된 값은 덮어쓰지 않아야 한다");
+        assertEquals("근저당권자D", second.mortgageeName());
+        assertFalse(second.cancelled());
+    }
 }

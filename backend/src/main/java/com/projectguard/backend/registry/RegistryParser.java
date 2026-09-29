@@ -70,6 +70,7 @@ public class RegistryParser {
             parseEulguMortgage(block).ifPresent(entry -> mortgageByRank.put(entry.rank(), entry));
         }
         applyEulguCancellations(eulguEntries, mortgageByRank);
+        backfillMortgagePartiesFromGlobalScan(eulguEntries, mortgageByRank);
 
         Map<Integer, SeizureEntry> seizureByRank = new HashMap<>();
         for (String block : gapguEntries) {
@@ -223,6 +224,50 @@ public class RegistryParser {
         String mortgageeName = firstMatch(block, MORTGAGEE_PATTERN);
 
         return java.util.Optional.of(new MortgageEntry(rank, amount, debtorName, mortgageeName, receivedDate, false));
+    }
+
+    /**
+     * OCR(카메라 촬영)은 표의 우측 컬럼("채무자"/"근저당권자")을 좌측 컬럼과 다른 블록으로
+     * 묶어버리는 경우가 있어, 해당 값이 엉뚱한(주로 뒤따르는 말소) 항목의 블록에 붙어버리고
+     * 원래 항목에는 채무자/근저당권자가 비어버리는 문제가 생긴다. 블록 단위 파싱으로 값을 못
+     * 채운 항목은, 을구 전체 텍스트에서 "채무자"/"근저당권자"가 등장하는 순서를 근저당권설정
+     * 항목의 순위 순서와 매칭해 보완한다 — 등기부등본은 한 근저당권설정 항목당 채무자/근저당권자가
+     * 정확히 하나씩만 나오므로, 등장 순서가 곧 순위 순서와 같다는 점을 이용한다.
+     */
+    private void backfillMortgagePartiesFromGlobalScan(List<String> eulguEntries, Map<Integer, MortgageEntry> byRank) {
+        boolean needsBackfill = byRank.values().stream()
+                .anyMatch(m -> m.debtorName() == null || m.mortgageeName() == null);
+        if (!needsBackfill) {
+            return;
+        }
+
+        String fullText = String.join(" ", eulguEntries);
+        List<String> debtors = findAll(fullText, DEBTOR_PATTERN);
+        List<String> mortgagees = findAll(fullText, MORTGAGEE_PATTERN);
+
+        List<Integer> ranksInOrder = new ArrayList<>(byRank.keySet());
+        ranksInOrder.sort(Integer::compareTo);
+
+        for (int i = 0; i < ranksInOrder.size(); i++) {
+            MortgageEntry entry = byRank.get(ranksInOrder.get(i));
+            if (entry.debtorName() != null && entry.mortgageeName() != null) {
+                continue;
+            }
+            String debtor = entry.debtorName() != null ? entry.debtorName() : (i < debtors.size() ? debtors.get(i) : null);
+            String mortgagee = entry.mortgageeName() != null
+                    ? entry.mortgageeName() : (i < mortgagees.size() ? mortgagees.get(i) : null);
+            byRank.put(entry.rank(), new MortgageEntry(
+                    entry.rank(), entry.maxClaimAmount(), debtor, mortgagee, entry.receivedDate(), entry.cancelled()));
+        }
+    }
+
+    private List<String> findAll(String text, Pattern pattern) {
+        List<String> results = new ArrayList<>();
+        Matcher m = pattern.matcher(text);
+        while (m.find()) {
+            results.add(m.group(1));
+        }
+        return results;
     }
 
     private void applyEulguCancellations(List<String> entries, Map<Integer, MortgageEntry> byRank) {
