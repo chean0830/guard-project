@@ -42,8 +42,8 @@ export function AnalyzeForm() {
   }
 
   return (
-    <div className="w-full max-w-2xl">
-      <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
+    <div className="w-full">
+      <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-100">
         본인이 계약 당사자이거나 본인 명의로 열람 가능한 부동산에 한해 사용해주세요.
       </div>
 
@@ -63,7 +63,7 @@ export function AnalyzeForm() {
             multiple
             accept="application/pdf,image/*"
             onChange={(e) => addFiles(e.target.files)}
-            className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-zinc-900 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-zinc-700 dark:file:bg-zinc-100 dark:file:text-zinc-900"
+            className="block w-full text-sm file:mr-3 file:rounded-full file:border-0 file:bg-orange-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-orange-600"
           />
           {files.length > 0 && (
             <ul className="mt-3 flex flex-col gap-1.5">
@@ -97,7 +97,7 @@ export function AnalyzeForm() {
             name="propertyType"
             required
             defaultValue="APARTMENT"
-            className="w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+            className="w-full rounded-xl border border-zinc-300 bg-transparent px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:border-zinc-700 dark:focus:ring-orange-900/30"
           >
             {PROPERTY_TYPES.map((type) => (
               <option key={type.value} value={type.value}>
@@ -119,7 +119,7 @@ export function AnalyzeForm() {
             min={0}
             step={10000}
             placeholder="예: 200000000"
-            className="w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+            className="w-full rounded-xl border border-zinc-300 bg-transparent px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:border-zinc-700 dark:focus:ring-orange-900/30"
           />
         </div>
 
@@ -131,8 +131,8 @@ export function AnalyzeForm() {
             id="buildingName"
             name="buildingName"
             type="text"
-            placeholder="예: 계양효성해링턴플레이스"
-            className="w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+            placeholder="예: 반포자이"
+            className="w-full rounded-xl border border-zinc-300 bg-transparent px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:border-zinc-700 dark:focus:ring-orange-900/30"
           />
         </div>
 
@@ -147,7 +147,7 @@ export function AnalyzeForm() {
             step={0.01}
             min={0}
             placeholder="예: 84.99"
-            className="w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+            className="w-full rounded-xl border border-zinc-300 bg-transparent px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:border-zinc-700 dark:focus:ring-orange-900/30"
           />
         </div>
 
@@ -160,14 +160,14 @@ export function AnalyzeForm() {
             name="declaredLandlordName"
             type="text"
             placeholder="예: 홍길동"
-            className="w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm dark:border-zinc-700"
+            className="w-full rounded-xl border border-zinc-300 bg-transparent px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:border-zinc-700 dark:focus:ring-orange-900/30"
           />
         </div>
 
         <button
           type="submit"
           disabled={pending}
-          className="mt-2 rounded-md bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          className="mt-2 rounded-full bg-orange-500 px-4 py-3 text-sm font-bold text-white shadow-md shadow-orange-500/30 transition-all hover:scale-[1.01] hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
         >
           {pending ? '분석 중...' : '분석하기'}
         </button>
