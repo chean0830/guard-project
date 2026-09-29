@@ -7,8 +7,16 @@ test.describe('분석 폼', () => {
     const requiredBadges = page.getByText('필수', { exact: true })
     const optionalBadges = page.getByText('선택', { exact: true })
 
-    await expect(requiredBadges).toHaveCount(3) // 등기부등본, 부동산 유형, 보증금
-    await expect(optionalBadges).toHaveCount(3) // 단지/건물명, 전용면적, 임대인 이름
+    await expect(requiredBadges).toHaveCount(4) // 등기부등본, 부동산 유형, 계약 형태, 보증금
+    await expect(optionalBadges).toHaveCount(4) // 단지/건물명, 전용면적, 임대인 이름, 계약서상 주소
+  })
+
+  test('월세를 선택하면 월세 입력란이 나타난다', async ({ page }) => {
+    await page.goto('/#analyze')
+
+    await expect(page.getByLabel('월세 (원)')).not.toBeVisible()
+    await page.getByLabel('계약 형태').selectOption('WOLSE')
+    await expect(page.getByLabel('월세 (원)')).toBeVisible()
   })
 
   test('파일을 추가하고 삭제할 수 있다', async ({ page }) => {

@@ -13,6 +13,11 @@ const PROPERTY_TYPES = [
   { value: 'VILLA', label: '빌라 (연립·다세대)' },
 ] as const
 
+const CONTRACT_TYPES = [
+  { value: 'JEONSE', label: '전세' },
+  { value: 'WOLSE', label: '월세' },
+] as const
+
 const inputStyle =
   'w-full rounded-xl border border-zinc-300 bg-transparent px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:border-zinc-700 dark:focus:ring-orange-900/30'
 
@@ -44,6 +49,7 @@ function FieldLabel({ htmlFor, required, children }: { htmlFor: string; required
 export function AnalyzeForm() {
   const [state, formAction, pending] = useActionState(analyzeAction, initialState)
   const [files, setFiles] = useState<File[]>([])
+  const [contractType, setContractType] = useState<'JEONSE' | 'WOLSE'>('JEONSE')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const fileInputId = useId()
@@ -164,6 +170,26 @@ export function AnalyzeForm() {
         </div>
 
         <div>
+          <FieldLabel htmlFor="contractType" required>
+            계약 형태
+          </FieldLabel>
+          <select
+            id="contractType"
+            name="contractType"
+            required
+            value={contractType}
+            onChange={(e) => setContractType(e.target.value as 'JEONSE' | 'WOLSE')}
+            className={inputStyle}
+          >
+            {CONTRACT_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
           <FieldLabel htmlFor="depositAmount" required>
             보증금 (원)
           </FieldLabel>
@@ -178,6 +204,27 @@ export function AnalyzeForm() {
             className={inputStyle}
           />
         </div>
+
+        {contractType === 'WOLSE' && (
+          <div>
+            <FieldLabel htmlFor="monthlyRent" required>
+              월세 (원)
+            </FieldLabel>
+            <p className="mb-2 text-xs text-zinc-500">
+              월세를 법정 전환율로 보증금에 환산해서, 전세와 같은 기준으로 비교해드려요.
+            </p>
+            <input
+              id="monthlyRent"
+              name="monthlyRent"
+              type="number"
+              required
+              min={0}
+              step={10000}
+              placeholder="예: 500000"
+              className={inputStyle}
+            />
+          </div>
+        )}
 
         <div className="mt-2 border-t border-dashed border-zinc-200 pt-5 dark:border-zinc-800">
           <p className="mb-4 text-sm text-zinc-500">
@@ -221,6 +268,22 @@ export function AnalyzeForm() {
                 name="declaredLandlordName"
                 type="text"
                 placeholder="예: 홍길동"
+                className={inputStyle}
+              />
+            </div>
+
+            <div>
+              <FieldLabel htmlFor="declaredAddress" required={false}>
+                계약서상 주소
+              </FieldLabel>
+              <p className="mb-2 text-xs text-zinc-500">
+                계약서에 적힌 주소까지 알려주시면 등기부 주소와 같은 곳인지 확인해드려요.
+              </p>
+              <input
+                id="declaredAddress"
+                name="declaredAddress"
+                type="text"
+                placeholder="예: 서울특별시 강남구 테스트로 123 101동 501호"
                 className={inputStyle}
               />
             </div>

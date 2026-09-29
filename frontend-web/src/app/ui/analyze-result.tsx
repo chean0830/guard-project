@@ -1,5 +1,6 @@
 import type {
   AnalyzeResult,
+  ChecklistItem,
   MortgageEntry,
   OwnershipEntry,
   RiskSignal,
@@ -80,8 +81,20 @@ function EntryRow({ label, cancelled, children }: { label: string; cancelled: bo
   )
 }
 
+function ChecklistCard({ item }: { item: ChecklistItem }) {
+  return (
+    <li className="flex gap-3 rounded-lg border border-zinc-200 p-3 text-sm dark:border-zinc-800">
+      <CheckBadgeIcon className="h-5 w-5 shrink-0 text-orange-500" />
+      <div>
+        <p className="font-medium">{item.title}</p>
+        <p className="mt-1 text-zinc-600 dark:text-zinc-400">{item.description}</p>
+      </div>
+    </li>
+  )
+}
+
 export function AnalyzeResultView({ result }: { result: AnalyzeResult }) {
-  const { registry, marketPrice, buildingInfo, riskSignals, hasHighRisk, disclaimer } = result
+  const { registry, marketPrice, buildingInfo, riskSignals, hasHighRisk, checklist, disclaimer } = result
   const sortedSignals = [...riskSignals].sort(
     (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity],
   )
@@ -153,6 +166,20 @@ export function AnalyzeResultView({ result }: { result: AnalyzeResult }) {
                 </li>
               )
             })}
+          </ul>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-lg font-semibold">직접 확인해야 할 것</h2>
+        <p className="mb-3 text-sm text-zinc-500">서류만으로는 알 수 없어서, 계약 전에 직접 확인해보시는 게 좋아요.</p>
+        {checklist.length === 0 ? (
+          <p className="text-sm text-zinc-500">표시할 항목이 없습니다.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {checklist.map((item) => (
+              <ChecklistCard key={item.title} item={item} />
+            ))}
           </ul>
         )}
       </section>

@@ -50,12 +50,18 @@ export type RiskSignal = {
   detail: string
 }
 
+export type ChecklistItem = {
+  title: string
+  description: string
+}
+
 export type AnalyzeResult = {
   registry: RegistryAnalysis
   marketPrice: number | null
   buildingInfo: BuildingInfo | null
   riskSignals: RiskSignal[]
   hasHighRisk: boolean
+  checklist: ChecklistItem[]
   disclaimer: string
 }
 
@@ -73,9 +79,10 @@ export async function analyzeAction(_prevState: AnalyzeState, formData: FormData
   }
 
   const propertyType = formData.get('propertyType')
+  const contractType = formData.get('contractType')
   const depositAmount = formData.get('depositAmount')
-  if (!propertyType || !depositAmount) {
-    return { status: 'error', message: '부동산 유형과 보증금을 입력해주세요.' }
+  if (!propertyType || !contractType || !depositAmount) {
+    return { status: 'error', message: '부동산 유형, 계약 형태, 보증금을 입력해주세요.' }
   }
 
   const outgoing = new FormData()
@@ -83,9 +90,10 @@ export async function analyzeAction(_prevState: AnalyzeState, formData: FormData
     outgoing.append('files', file)
   }
   outgoing.append('propertyType', String(propertyType))
+  outgoing.append('contractType', String(contractType))
   outgoing.append('depositAmount', String(depositAmount))
 
-  for (const field of ['buildingName', 'exclusiveAreaSqm', 'declaredLandlordName']) {
+  for (const field of ['monthlyRent', 'buildingName', 'exclusiveAreaSqm', 'declaredLandlordName', 'declaredAddress']) {
     const value = formData.get(field)
     if (value) {
       outgoing.append(field, String(value))
