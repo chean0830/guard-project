@@ -27,7 +27,8 @@ public class BackendApplication {
 	 * entries()로 판단할 수 없고, 파일을 직접 읽어서 확인해야 한다.
 	 */
 	private static final Set<String> SENSITIVE_KEYS_REQUIRING_EXPLICIT_ENV = Set.of(
-			"MAIL_HOST", "MAIL_PORT", "MAIL_USERNAME", "MAIL_PASSWORD"
+			"MAIL_HOST", "MAIL_PORT", "MAIL_USERNAME", "MAIL_PASSWORD",
+			"VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"
 	);
 
 	public static void main(String[] args) {

@@ -3,6 +3,7 @@ package com.projectguard.backend.consultation;
 import com.projectguard.backend.lawyer.Lawyer;
 import com.projectguard.backend.lawyer.LawyerRepository;
 import com.projectguard.backend.lawyer.LawyerStatus;
+import com.projectguard.backend.push.PushNotificationService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,17 +22,20 @@ public class ConsultationService {
     private final ConsultationMessageRepository messageRepository;
     private final LawyerRepository lawyerRepository;
     private final ConsultationMailService mailService;
+    private final PushNotificationService pushNotificationService;
 
     public ConsultationService(
             ConsultationRepository consultationRepository,
             ConsultationMessageRepository messageRepository,
             LawyerRepository lawyerRepository,
-            ConsultationMailService mailService
+            ConsultationMailService mailService,
+            PushNotificationService pushNotificationService
     ) {
         this.consultationRepository = consultationRepository;
         this.messageRepository = messageRepository;
         this.lawyerRepository = lawyerRepository;
         this.mailService = mailService;
+        this.pushNotificationService = pushNotificationService;
     }
 
     public Consultation startConsultation(Long userId, String initialMessage) {
@@ -64,6 +68,8 @@ public class ConsultationService {
         if (senderType == SenderType.USER) {
             lawyerRepository.findById(consultation.getLawyerId())
                     .ifPresent(lawyer -> notifyLawyerIfEnabled(lawyer, content));
+        } else {
+            pushNotificationService.notifyUser(consultation.getUserId(), consultationId, content);
         }
         return message;
     }
