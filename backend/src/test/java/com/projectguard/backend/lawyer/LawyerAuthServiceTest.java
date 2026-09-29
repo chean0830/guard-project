@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -109,5 +110,51 @@ class LawyerAuthServiceTest {
         lawyerAuthService.logout(result.token());
 
         assertTrue(lawyerAuthService.validate(result.token()).isEmpty());
+    }
+
+    @Test
+    void 프로필을_수정할_수_있다() {
+        Lawyer lawyer = lawyerAuthService.signup(
+                "profile-lawyer@example.com", "password123", "김변호", "예전 소속", "12345", oneDocument());
+
+        Lawyer updated = lawyerAuthService.updateProfile(
+                lawyer.getId(), "김변호2", "새 소속", "전세사기, 임대차분쟁", "안녕하세요");
+
+        assertEquals("김변호2", updated.getName());
+        assertEquals("새 소속", updated.getLawFirm());
+        assertEquals("전세사기, 임대차분쟁", updated.getSpecialties());
+        assertEquals("안녕하세요", updated.getIntroduction());
+    }
+
+    @Test
+    void 이메일_알림_설정을_끌_수_있다() {
+        Lawyer lawyer = lawyerAuthService.signup(
+                "notif-lawyer@example.com", "password123", "김변호", null, "12345", oneDocument());
+        assertTrue(lawyer.isEmailNotificationsEnabled());
+
+        lawyerAuthService.updateEmailNotificationsEnabled(lawyer.getId(), false);
+
+        assertFalse(lawyerRepository.findById(lawyer.getId()).get().isEmailNotificationsEnabled());
+    }
+
+    @Test
+    void 현재_비밀번호가_맞으면_비밀번호를_변경할_수_있다() {
+        Lawyer lawyer = lawyerAuthService.signup(
+                "changepw-lawyer@example.com", "password123", "김변호", null, "12345", oneDocument());
+        lawyer.approve();
+        lawyerRepository.save(lawyer);
+
+        lawyerAuthService.changePassword(lawyer.getId(), "password123", "newpassword456");
+
+        assertTrue(lawyerAuthService.login("changepw-lawyer@example.com", "newpassword456").token() != null);
+    }
+
+    @Test
+    void 현재_비밀번호가_틀리면_비밀번호_변경에_실패한다() {
+        Lawyer lawyer = lawyerAuthService.signup(
+                "changepwfail-lawyer@example.com", "password123", "김변호", null, "12345", oneDocument());
+
+        assertThrows(InvalidCredentialsException.class,
+                () -> lawyerAuthService.changePassword(lawyer.getId(), "wrongpassword", "newpassword456"));
     }
 }

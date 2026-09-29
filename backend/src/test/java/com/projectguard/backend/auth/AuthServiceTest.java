@@ -104,4 +104,44 @@ class AuthServiceTest {
     void 소셜_로그인인데_이메일_동의를_안했으면_예외가_난다() {
         assertThrows(IllegalArgumentException.class, () -> authService.oauthLogin("KAKAO", "kakao-uid-2", null));
     }
+
+    @Test
+    void 프로필_이름을_수정할_수_있다() {
+        AuthResult result = authService.signup("profile@example.com", "password123");
+        Long userId = authService.validate(result.token()).get().getId();
+
+        authService.updateProfile(userId, "홍길동");
+
+        assertEquals("홍길동", authService.validate(result.token()).get().getName());
+    }
+
+    @Test
+    void 현재_비밀번호가_맞으면_비밀번호를_변경할_수_있다() {
+        AuthResult result = authService.signup("changepw@example.com", "password123");
+        Long userId = authService.validate(result.token()).get().getId();
+
+        authService.changePassword(userId, "password123", "newpassword456");
+
+        assertTrue(authService.login("changepw@example.com", "newpassword456").token() != null);
+        assertThrows(InvalidCredentialsException.class,
+                () -> authService.login("changepw@example.com", "password123"));
+    }
+
+    @Test
+    void 현재_비밀번호가_틀리면_비밀번호_변경에_실패한다() {
+        AuthResult result = authService.signup("changepwfail@example.com", "password123");
+        Long userId = authService.validate(result.token()).get().getId();
+
+        assertThrows(InvalidCredentialsException.class,
+                () -> authService.changePassword(userId, "wrongpassword", "newpassword456"));
+    }
+
+    @Test
+    void 소셜_로그인_계정은_비밀번호를_변경할_수_없다() {
+        AuthResult result = authService.oauthLogin("GOOGLE", "google-uid-3", "oauthpw@example.com");
+        Long userId = authService.validate(result.token()).get().getId();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> authService.changePassword(userId, "anything", "newpassword456"));
+    }
 }

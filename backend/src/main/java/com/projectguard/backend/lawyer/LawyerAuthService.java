@@ -106,6 +106,38 @@ public class LawyerAuthService {
         }
     }
 
+    public Lawyer updateProfile(Long lawyerId, String name, String lawFirm, String specialties, String introduction) {
+        Lawyer lawyer = requireLawyer(lawyerId);
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("이름을 입력해주세요.");
+        }
+        lawyer.updateProfile(name, lawFirm, specialties, introduction);
+        return lawyerRepository.save(lawyer);
+    }
+
+    public void updateEmailNotificationsEnabled(Long lawyerId, boolean enabled) {
+        Lawyer lawyer = requireLawyer(lawyerId);
+        lawyer.setEmailNotificationsEnabled(enabled);
+        lawyerRepository.save(lawyer);
+    }
+
+    public void changePassword(Long lawyerId, String currentPassword, String newPassword) {
+        Lawyer lawyer = requireLawyer(lawyerId);
+        if (!passwordEncoder.matches(currentPassword, lawyer.getPasswordHash())) {
+            throw new InvalidCredentialsException("현재 비밀번호가 올바르지 않습니다.");
+        }
+        if (newPassword == null || newPassword.length() < MIN_PASSWORD_LENGTH) {
+            throw new IllegalArgumentException("새 비밀번호는 " + MIN_PASSWORD_LENGTH + "자 이상이어야 합니다.");
+        }
+        lawyer.changePasswordHash(passwordEncoder.encode(newPassword));
+        lawyerRepository.save(lawyer);
+    }
+
+    private Lawyer requireLawyer(Long lawyerId) {
+        return lawyerRepository.findById(lawyerId)
+                .orElseThrow(() -> new InvalidCredentialsException("로그인이 필요합니다."));
+    }
+
     private LawyerAuthResult issueToken(Lawyer lawyer) {
         String token = UUID.randomUUID().toString();
         tokenRepository.save(new LawyerAuthToken(token, lawyer.getId(), Instant.now().plus(TOKEN_TTL)));

@@ -38,6 +38,11 @@ public class Lawyer {
     @Column(nullable = false)
     private String barNumber;
 
+    private String specialties;
+
+    @Column(length = 1000)
+    private String introduction;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private LawyerStatus status = LawyerStatus.PENDING;
@@ -49,6 +54,9 @@ public class Lawyer {
 
     private Instant reviewedAt;
 
+    @Column(nullable = false)
+    private boolean emailNotificationsEnabled = true;
+
     protected Lawyer() {
     }
 
@@ -58,6 +66,21 @@ public class Lawyer {
         this.name = name;
         this.lawFirm = lawFirm;
         this.barNumber = barNumber;
+    }
+
+    public void updateProfile(String name, String lawFirm, String specialties, String introduction) {
+        this.name = name;
+        this.lawFirm = lawFirm;
+        this.specialties = specialties;
+        this.introduction = introduction;
+    }
+
+    public void changePasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
+    public void setEmailNotificationsEnabled(boolean enabled) {
+        this.emailNotificationsEnabled = enabled;
     }
 
     public void approve() {
@@ -94,6 +117,18 @@ public class Lawyer {
 
     public String getBarNumber() {
         return barNumber;
+    }
+
+    public String getSpecialties() {
+        return specialties;
+    }
+
+    public String getIntroduction() {
+        return introduction;
+    }
+
+    public boolean isEmailNotificationsEnabled() {
+        return emailNotificationsEnabled;
     }
 
     public LawyerStatus getStatus() {

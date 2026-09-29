@@ -33,6 +33,9 @@ public class User {
     /** 소셜 로그인 제공자가 주는 고유 사용자 ID. LOCAL 계정은 null. */
     private String providerId;
 
+    /** 변호사와의 상담 화면 등에서 이메일 대신 표시할 이름. 선택 입력이라 null일 수 있다. */
+    private String name;
+
     protected User() {
     }
 
@@ -46,6 +49,14 @@ public class User {
         this.email = email;
         this.provider = provider;
         this.providerId = providerId;
+    }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+
+    public void changePasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public Long getId() {
@@ -66,5 +77,9 @@ public class User {
 
     public String getProviderId() {
         return providerId;
+    }
+
+    public String getName() {
+        return name;
     }
 }

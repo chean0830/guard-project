@@ -72,6 +72,30 @@ public class AuthService {
         }
     }
 
+    public void updateProfile(Long userId, String name) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new InvalidCredentialsException("로그인이 필요합니다."));
+        user.updateName(name);
+        userRepository.save(user);
+    }
+
+    /** 소셜 로그인 계정(passwordHash가 없음)은 비밀번호가 없으므로 변경할 수 없다. */
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new InvalidCredentialsException("로그인이 필요합니다."));
+        if (user.getPasswordHash() == null) {
+            throw new IllegalArgumentException("소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.");
+        }
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new InvalidCredentialsException("현재 비밀번호가 올바르지 않습니다.");
+        }
+        if (newPassword == null || newPassword.length() < MIN_PASSWORD_LENGTH) {
+            throw new IllegalArgumentException("새 비밀번호는 " + MIN_PASSWORD_LENGTH + "자 이상이어야 합니다.");
+        }
+        user.changePasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
     private AuthResult issueToken(User user) {
         String token = UUID.randomUUID().toString();
         authTokenRepository.save(new AuthToken(token, user.getId(), Instant.now().plus(TOKEN_TTL)));
