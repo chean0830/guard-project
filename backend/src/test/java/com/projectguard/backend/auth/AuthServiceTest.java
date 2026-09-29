@@ -75,4 +75,33 @@ class AuthServiceTest {
     void 존재하지_않는_토큰은_검증에_실패한다() {
         assertTrue(authService.validate("no-such-token").isEmpty());
     }
+
+    @Test
+    void 소셜_로그인은_처음이면_새_계정을_만든다() {
+        AuthResult result = authService.oauthLogin("GOOGLE", "google-uid-1", "oauth1@example.com");
+
+        assertTrue(authService.validate(result.token()).isPresent());
+        assertEquals("GOOGLE", authService.validate(result.token()).get().getProvider());
+    }
+
+    @Test
+    void 같은_이메일로_소셜_로그인하면_기존_계정으로_로그인된다() {
+        AuthResult first = authService.oauthLogin("GOOGLE", "google-uid-2", "oauth2@example.com");
+        AuthResult second = authService.oauthLogin("GOOGLE", "google-uid-2", "oauth2@example.com");
+
+        assertEquals(authService.validate(first.token()).get().getId(), authService.validate(second.token()).get().getId());
+    }
+
+    @Test
+    void 이메일로_가입한_계정과_같은_이메일로_소셜로그인하면_같은_계정으로_합쳐진다() {
+        authService.signup("shared@example.com", "password123");
+        AuthResult oauthResult = authService.oauthLogin("KAKAO", "kakao-uid-1", "shared@example.com");
+
+        assertEquals("shared@example.com", authService.validate(oauthResult.token()).get().getEmail());
+    }
+
+    @Test
+    void 소셜_로그인인데_이메일_동의를_안했으면_예외가_난다() {
+        assertThrows(IllegalArgumentException.class, () -> authService.oauthLogin("KAKAO", "kakao-uid-2", null));
+    }
 }

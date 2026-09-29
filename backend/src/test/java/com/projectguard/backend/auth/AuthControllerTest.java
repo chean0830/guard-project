@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
@@ -20,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
+@TestPropertySource(properties = "INTERNAL_SYNC_SECRET=test-secret")
 class AuthControllerTest {
 
     @Autowired
@@ -90,5 +92,35 @@ class AuthControllerTest {
                 .andExpect(status().isOk());
 
         verify(authService).logout("some-token");
+    }
+
+    @Test
+    void 내부_비밀키가_맞으면_소셜로그인을_동기화한다() throws Exception {
+        when(authService.oauthLogin("GOOGLE", "uid-1", "oauth@example.com"))
+                .thenReturn(new AuthResult("token-xyz", "oauth@example.com"));
+
+        mockMvc.perform(post("/api/auth/oauth-sync")
+                        .header("X-Internal-Secret", "test-secret")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new AuthController.OAuthSyncRequest("GOOGLE", "uid-1", "oauth@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("token-xyz"));
+    }
+
+    @Test
+    void 내부_비밀키가_틀리거나_없으면_401을_반환한다() throws Exception {
+        mockMvc.perform(post("/api/auth/oauth-sync")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new AuthController.OAuthSyncRequest("GOOGLE", "uid-1", "oauth@example.com"))))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/auth/oauth-sync")
+                        .header("X-Internal-Secret", "wrong-secret")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                new AuthController.OAuthSyncRequest("GOOGLE", "uid-1", "oauth@example.com"))))
+                .andExpect(status().isUnauthorized());
     }
 }

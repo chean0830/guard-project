@@ -1,5 +1,6 @@
 package com.projectguard.backend.auth;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,15 +20,23 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final String internalSyncSecret;
 
-    public AuthController(AuthService authService) {
+    public AuthController(
+            AuthService authService,
+            @Value("${INTERNAL_SYNC_SECRET:}") String internalSyncSecret
+    ) {
         this.authService = authService;
+        this.internalSyncSecret = internalSyncSecret;
     }
 
     public record AuthRequest(String email, String password) {
     }
 
     public record AuthResponse(String token, String email) {
+    }
+
+    public record OAuthSyncRequest(String provider, String providerId, String email) {
     }
 
     @PostMapping("/signup")
@@ -39,6 +48,24 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@RequestBody AuthRequest request) {
         AuthResult result = authService.login(request.email(), request.password());
+        return new AuthResponse(result.token(), result.email());
+    }
+
+    /**
+     * 구글/카카오/네이버 콜백을 실제로 처리하는 건 프론트엔드(Next.js 서버 쪽)다. 이 엔드포인트는
+     * 그 결과(이미 검증된 provider/providerId/email)를 받아 우리 서비스 세션 토큰만 발급하는
+     * 내부 전용 API라, 브라우저가 아닌 서버끼리만 호출해야 한다 — 그래서 공유 비밀키로 한 번 더 막는다
+     * (이 값이 없으면 아무나 이메일만 주장해서 로그인할 수 있게 되므로 필수).
+     */
+    @PostMapping("/oauth-sync")
+    public AuthResponse oauthSync(
+            @RequestBody OAuthSyncRequest request,
+            @RequestHeader(value = "X-Internal-Secret", required = false) String providedSecret
+    ) {
+        if (internalSyncSecret.isBlank() || !internalSyncSecret.equals(providedSecret)) {
+            throw new InvalidCredentialsException("내부 전용 엔드포인트입니다.");
+        }
+        AuthResult result = authService.oauthLogin(request.provider(), request.providerId(), request.email());
         return new AuthResponse(result.token(), result.email());
     }
 

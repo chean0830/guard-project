@@ -38,8 +38,22 @@ public class AuthService {
 
     public AuthResult login(String email, String password) {
         User user = userRepository.findByEmail(email)
-                .filter(u -> passwordEncoder.matches(password, u.getPasswordHash()))
+                .filter(u -> u.getPasswordHash() != null && passwordEncoder.matches(password, u.getPasswordHash()))
                 .orElseThrow(() -> new InvalidCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다."));
+        return issueToken(user);
+    }
+
+    /**
+     * 소셜 로그인 콜백을 실제로 검증하는 건 프론트엔드(Next.js) 쪽이다 — 여기서는 이미 검증된
+     * (provider, providerId, email)을 받아 회원을 찾거나 새로 만들고 세션 토큰만 발급한다.
+     * 같은 이메일로 이미 가입돼 있으면(로컬 가입이든 다른 소셜이든) 같은 계정으로 로그인시킨다.
+     */
+    public AuthResult oauthLogin(String provider, String providerId, String email) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("이메일 제공에 동의해야 로그인할 수 있습니다.");
+        }
+        User user = userRepository.findByEmail(email)
+                .orElseGet(() -> userRepository.save(new User(email, provider, providerId)));
         return issueToken(user);
     }
 
