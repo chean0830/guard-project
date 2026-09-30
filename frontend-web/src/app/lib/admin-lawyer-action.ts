@@ -1,5 +1,7 @@
 'use server'
 
+import { adminAuthHeader } from '@/app/lib/admin-session'
+
 const BACKEND_URL = process.env.BACKEND_API_URL ?? 'http://localhost:8080'
 
 export type LawyerDocumentSummary = { id: number; fileName: string; contentType: string }
@@ -31,29 +33,29 @@ async function readErrorMessage(response: Response): Promise<string> {
   return text || `요청에 실패했습니다. (${response.status})`
 }
 
-export async function fetchLawyerApplicantsAction(secret: string, status?: string): Promise<AdminListResult> {
+export async function fetchLawyerApplicantsAction(status?: string): Promise<AdminListResult> {
   const url = new URL(`${BACKEND_URL}/api/admin/lawyers`)
   if (status) url.searchParams.set('status', status)
 
   let response: Response
   try {
-    response = await fetch(url, { headers: { 'X-Admin-Secret': secret }, cache: 'no-store' })
+    response = await fetch(url, { headers: await adminAuthHeader(), cache: 'no-store' })
   } catch {
     return { ok: false, message: '서버에 연결할 수 없습니다.' }
   }
   if (!response.ok) {
-    return { ok: false, message: response.status === 401 ? '관리자 비밀키가 올바르지 않습니다.' : await readErrorMessage(response) }
+    return { ok: false, message: response.status === 401 ? '관리자 로그인이 필요합니다.' : await readErrorMessage(response) }
   }
   const lawyers = (await response.json()) as LawyerApplicant[]
   return { ok: true, lawyers }
 }
 
-export async function approveLawyerAction(secret: string, lawyerId: number): Promise<AdminActionResult> {
+export async function approveLawyerAction(lawyerId: number): Promise<AdminActionResult> {
   let response: Response
   try {
     response = await fetch(`${BACKEND_URL}/api/admin/lawyers/${lawyerId}/approve`, {
       method: 'POST',
-      headers: { 'X-Admin-Secret': secret },
+      headers: await adminAuthHeader(),
     })
   } catch {
     return { ok: false, message: '서버에 연결할 수 없습니다.' }
@@ -64,12 +66,12 @@ export async function approveLawyerAction(secret: string, lawyerId: number): Pro
   return { ok: true }
 }
 
-export async function rejectLawyerAction(secret: string, lawyerId: number, reason: string): Promise<AdminActionResult> {
+export async function rejectLawyerAction(lawyerId: number, reason: string): Promise<AdminActionResult> {
   let response: Response
   try {
     response = await fetch(`${BACKEND_URL}/api/admin/lawyers/${lawyerId}/reject`, {
       method: 'POST',
-      headers: { 'X-Admin-Secret': secret, 'Content-Type': 'application/json' },
+      headers: { ...(await adminAuthHeader()), 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason }),
     })
   } catch {
@@ -82,14 +84,13 @@ export async function rejectLawyerAction(secret: string, lawyerId: number, reaso
 }
 
 export async function downloadLawyerDocumentAction(
-  secret: string,
   lawyerId: number,
   documentId: number,
 ): Promise<AdminDocumentResult> {
   let response: Response
   try {
     response = await fetch(`${BACKEND_URL}/api/admin/lawyers/${lawyerId}/documents/${documentId}`, {
-      headers: { 'X-Admin-Secret': secret },
+      headers: await adminAuthHeader(),
     })
   } catch {
     return { ok: false, message: '서버에 연결할 수 없습니다.' }

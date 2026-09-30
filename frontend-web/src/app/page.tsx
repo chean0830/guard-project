@@ -1,8 +1,6 @@
-import Link from 'next/link'
 import { AnalyzeForm } from '@/app/ui/analyze-form'
 import { BankIcon, CheckBadgeIcon, ScaleIcon, SearchIcon, ShieldIcon, UploadIcon, WarningIcon } from '@/app/ui/icons'
 import { LawyerCta } from '@/app/ui/lawyer-cta'
-import { getSessionEmail, logoutAction } from '@/app/lib/auth-action'
 
 const PAIN_POINTS = [
   '등기부등본을 받아도 무슨 말인지 하나도 모르겠어요',
@@ -84,33 +82,8 @@ const STEPS = [
 ]
 
 export default async function Home() {
-  const sessionEmail = await getSessionEmail()
-
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-zinc-950">
-      <div className="flex justify-end px-4 pt-4 text-sm sm:px-8">
-        {sessionEmail ? (
-          <div className="flex items-center gap-4 text-zinc-500">
-            <Link href="/consult" className="hover:text-zinc-700 dark:hover:text-zinc-300">
-              내 문의
-            </Link>
-            <Link href="/settings" className="hover:text-zinc-700 dark:hover:text-zinc-300">
-              설정
-            </Link>
-            <form action={logoutAction} className="flex items-center gap-2">
-              <span>{sessionEmail}님</span>
-              <button type="submit" className="font-semibold text-orange-600 hover:underline dark:text-orange-400">
-                로그아웃
-              </button>
-            </form>
-          </div>
-        ) : (
-          <Link href="/login" className="font-semibold text-orange-600 hover:underline dark:text-orange-400">
-            로그인
-          </Link>
-        )}
-      </div>
-
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-b from-orange-50 to-white px-4 pt-8 pb-24 text-center dark:from-zinc-900 dark:to-zinc-950 sm:px-8">
         <p className="mx-auto mb-4 inline-block rounded-full bg-orange-100 px-4 py-1.5 text-sm font-semibold text-orange-700 dark:bg-orange-500/10 dark:text-orange-400">

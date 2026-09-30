@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { listLawyerBlocksAction, lawyerUnblockAction } from '@/app/lib/lawyer-consultation-action'
+import { BlockedList } from '@/app/ui/blocked-list'
 import { getLawyerProfileAction } from '@/app/lib/lawyer-profile-action'
 import { LawyerSettingsForm } from '@/app/ui/lawyer-settings-form'
 
@@ -16,6 +18,7 @@ export default async function LawyerSettingsPage() {
       </Link>
       <h1 className="mb-8 text-2xl font-bold text-zinc-950 dark:text-zinc-50">설정</h1>
       <LawyerSettingsForm profile={profile} />
+      <BlockedList initialEntries={await listLawyerBlocksAction()} unblock={lawyerUnblockAction} emptyText="차단한 회원이 없어요." />
     </div>
   )
 }

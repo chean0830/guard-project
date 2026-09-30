@@ -1,6 +1,8 @@
 'use server'
 
 import { cookies } from 'next/headers'
+import type { BlockedEntry, BlockResult } from '@/app/lib/block-types'
+import type { ReportReason, ReportResult } from '@/app/lib/report-types'
 
 const BACKEND_URL = process.env.BACKEND_API_URL ?? 'http://localhost:8080'
 
@@ -22,6 +24,8 @@ export type ConsultationMessage = {
 export type ConsultationThread = {
   lawyerName: string
   lawFirm: string | null
+  counterpartBlocked: boolean
+  blockState: 'NONE' | 'BLOCKED_BY_ME' | 'BLOCKED_ME'
   messages: ConsultationMessage[]
 }
 
@@ -119,4 +123,72 @@ export async function sendConsultationMessageAction(
   }
 
   return { status: 'idle' }
+}
+
+export async function reportConsultationAction(id: number, reason: ReportReason, detail: string): Promise<ReportResult> {
+  let response: Response
+  try {
+    response = await fetch(`${BACKEND_URL}/api/consultations/${id}/report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
+      body: JSON.stringify({ reason, detail }),
+    })
+  } catch {
+    return { ok: false, message: '서버에 연결할 수 없습니다.' }
+  }
+
+  if (!response.ok) {
+    const text = await response.text()
+    return { ok: false, message: text || '신고 접수에 실패했습니다.' }
+  }
+
+  const data = (await response.json()) as { message: string }
+  return { ok: true, message: data.message }
+}
+
+export async function getConsultationSocketTicketAction(id: number): Promise<string | null> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/consultations/${id}/socket-ticket`, {
+      method: 'POST',
+      headers: await authHeader(),
+      cache: 'no-store',
+    })
+    if (!response.ok) return null
+    const data = (await response.json()) as { ticket: string }
+    return data.ticket
+  } catch {
+    return null
+  }
+}
+
+export async function blockConsultationCounterpartAction(id: number): Promise<BlockResult> {
+  let response: Response
+  try {
+    response = await fetch(`${BACKEND_URL}/api/consultations/${id}/block`, { method: 'POST', headers: await authHeader() })
+  } catch {
+    return { ok: false, message: '서버에 연결할 수 없습니다.' }
+  }
+  if (!response.ok) return { ok: false, message: (await response.text()) || '차단하지 못했습니다.' }
+  return { ok: true }
+}
+
+export async function listMyBlocksAction(): Promise<BlockedEntry[]> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/blocks`, { headers: await authHeader(), cache: 'no-store' })
+    if (!response.ok) return []
+    return (await response.json()) as BlockedEntry[]
+  } catch {
+    return []
+  }
+}
+
+export async function unblockAction(blockId: number): Promise<BlockResult> {
+  let response: Response
+  try {
+    response = await fetch(`${BACKEND_URL}/api/blocks/${blockId}`, { method: 'DELETE', headers: await authHeader() })
+  } catch {
+    return { ok: false, message: '서버에 연결할 수 없습니다.' }
+  }
+  if (!response.ok) return { ok: false, message: (await response.text()) || '차단을 해제하지 못했습니다.' }
+  return { ok: true }
 }

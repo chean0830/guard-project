@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   approveLawyerAction,
   downloadLawyerDocumentAction,
@@ -8,9 +8,6 @@ import {
   rejectLawyerAction,
   type LawyerApplicant,
 } from '@/app/lib/admin-lawyer-action'
-
-const inputStyle =
-  'w-full rounded-xl border border-zinc-300 bg-transparent px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:border-zinc-700 dark:focus:ring-orange-900/30'
 
 const TABS = [
   { value: 'PENDING', label: '승인 대기' },
@@ -39,9 +36,7 @@ function downloadBase64File(fileName: string, contentType: string, base64: strin
   URL.revokeObjectURL(url)
 }
 
-export function AdminLawyerDashboard() {
-  const [secret, setSecret] = useState('')
-  const [secretInput, setSecretInput] = useState('')
+export function AdminLawyerDashboard({ onUnauthorized }: { onUnauthorized: () => void }) {
   const [tab, setTab] = useState<(typeof TABS)[number]['value']>('PENDING')
   const [lawyers, setLawyers] = useState<LawyerApplicant[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -49,52 +44,53 @@ export function AdminLawyerDashboard() {
   const [rejectingId, setRejectingId] = useState<number | null>(null)
   const [rejectReason, setRejectReason] = useState('')
 
-  async function loadTab(nextSecret: string, nextTab: string) {
+  async function loadTab(nextTab: string) {
     setLoading(true)
     setError(null)
-    const result = await fetchLawyerApplicantsAction(nextSecret, nextTab)
+    const result = await fetchLawyerApplicantsAction(nextTab)
     setLoading(false)
     if (!result.ok) {
       setError(result.message)
-      if (result.message.includes('비밀키')) setSecret('')
+      if (result.message.includes('관리자 로그인')) onUnauthorized()
       return
     }
     setLawyers(result.lawyers)
   }
 
-  async function handleUnlock(e: React.FormEvent) {
-    e.preventDefault()
-    setSecret(secretInput)
-    await loadTab(secretInput, tab)
-  }
+  useEffect(() => {
+    // 최초 진입 시 승인 대기 목록을 불러온다 (탭 전환 시에는 handleTabChange가 다시 불러옴).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadTab('PENDING')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleTabChange(nextTab: (typeof TABS)[number]['value']) {
     setTab(nextTab)
-    await loadTab(secret, nextTab)
+    await loadTab(nextTab)
   }
 
   async function handleApprove(id: number) {
-    const result = await approveLawyerAction(secret, id)
+    const result = await approveLawyerAction(id)
     if (!result.ok) {
       setError(result.message)
       return
     }
-    await loadTab(secret, tab)
+    await loadTab(tab)
   }
 
   async function handleReject(id: number) {
-    const result = await rejectLawyerAction(secret, id, rejectReason)
+    const result = await rejectLawyerAction(id, rejectReason)
     setRejectingId(null)
     setRejectReason('')
     if (!result.ok) {
       setError(result.message)
       return
     }
-    await loadTab(secret, tab)
+    await loadTab(tab)
   }
 
   async function handleDownload(lawyerId: number, documentId: number) {
-    const result = await downloadLawyerDocumentAction(secret, lawyerId, documentId)
+    const result = await downloadLawyerDocumentAction(lawyerId, documentId)
     if (!result.ok) {
       setError(result.message)
       return
@@ -102,44 +98,9 @@ export function AdminLawyerDashboard() {
     downloadBase64File(result.fileName, result.contentType, result.base64)
   }
 
-  if (!secret) {
-    return (
-      <div className="mx-auto w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-zinc-950 dark:text-zinc-50">관리자 로그인</h1>
-        <p className="mt-2 text-sm text-zinc-500">변호사 가입 신청을 검토하려면 관리자 비밀키를 입력해주세요.</p>
-
-        <form onSubmit={handleUnlock} className="mt-6 flex flex-col gap-4">
-          <input
-            type="password"
-            value={secretInput}
-            onChange={(e) => setSecretInput(e.target.value)}
-            placeholder="ADMIN_SECRET"
-            required
-            className={inputStyle}
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-full bg-orange-500 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading ? '확인 중...' : '입장'}
-          </button>
-        </form>
-
-        {error && (
-          <p className="mt-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-            {error}
-          </p>
-        )}
-      </div>
-    )
-  }
-
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      <h1 className="text-2xl font-bold text-zinc-950 dark:text-zinc-50">변호사 가입 신청 검토</h1>
-
-      <div className="mt-6 flex gap-2">
+    <div>
+      <div className="flex gap-2">
         {TABS.map((t) => (
           <button
             key={t.value}

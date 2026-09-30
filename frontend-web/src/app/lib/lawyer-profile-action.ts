@@ -13,6 +13,10 @@ export type LawyerProfile = {
   introduction: string | null
   emailNotificationsEnabled: boolean
   status: string
+  headline: string | null
+  careerYears: number | null
+  feeInfo: string | null
+  achievements: string | null
 }
 
 export type ProfileFormState = { status: 'idle' } | { status: 'error'; message: string } | { status: 'success' }
@@ -55,6 +59,10 @@ export async function updateLawyerProfileAction(
         lawFirm: String(formData.get('lawFirm') ?? '') || null,
         specialties: String(formData.get('specialties') ?? '') || null,
         introduction: String(formData.get('introduction') ?? '') || null,
+        headline: String(formData.get('headline') ?? '') || null,
+        careerYears: String(formData.get('careerYears') ?? '') === '' ? null : Number(formData.get('careerYears')),
+        feeInfo: String(formData.get('feeInfo') ?? '') || null,
+        achievements: String(formData.get('achievements') ?? '') || null,
       }),
     })
   } catch {

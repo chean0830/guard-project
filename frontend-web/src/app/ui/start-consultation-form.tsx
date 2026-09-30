@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { startConsultationAction, type StartConsultationState } from '@/app/lib/consultation-action'
 import { ConsultationSubmittedModal } from '@/app/ui/consultation-submitted-modal'
+import { isLoginRequired, LoginRequiredDialog } from '@/app/ui/login-required-dialog'
 
 const initialState: StartConsultationState = { status: 'idle' }
 
@@ -26,7 +27,8 @@ export function StartConsultationForm() {
         >
           {pending ? '등록 중...' : '문의 보내기'}
         </button>
-        {state.status === 'error' && (
+        <LoginRequiredDialog message={state.status === 'error' ? state.message : null} />
+        {state.status === 'error' && !isLoginRequired(state.message) && (
           <p className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
             {state.message}
           </p>

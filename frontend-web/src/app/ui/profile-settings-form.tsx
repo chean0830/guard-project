@@ -7,6 +7,7 @@ import {
   type Profile,
   type ProfileFormState,
 } from '@/app/lib/profile-action'
+import { isLoginRequired, LoginRequiredDialog } from '@/app/ui/login-required-dialog'
 
 const initialState: ProfileFormState = { status: 'idle' }
 
@@ -15,6 +16,7 @@ const inputStyle =
 
 function StatusMessage({ state }: { state: ProfileFormState }) {
   if (state.status === 'error') {
+    if (isLoginRequired(state.message)) return <LoginRequiredDialog message={state.message} />
     return (
       <p className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
         {state.message}

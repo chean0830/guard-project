@@ -24,4 +24,10 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), "Apple SD Gothic Neo", "Malgun Gothic", -apple-system,
     BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* 브라우저 기본값은 한글을 글자 단위로 아무 데서나 줄바꿈해 단어가 쪼개진다. 띄어쓰기 기준으로만 줄바꿈하고,
+     띄어쓰기 없이 긴 문자열(이메일, URL 등)만 넘칠 때 예외적으로 중간에서 끊는다.
+     text-wrap: pretty는 마지막 줄에 단어 하나만 덩그러니 남지 않도록 줄 길이를 고르게 맞춘다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  text-wrap: pretty;
 }

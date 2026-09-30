@@ -1,9 +1,6 @@
-import { AdminLawyerDashboard } from '@/app/ui/admin-lawyer-dashboard'
+import { redirect } from 'next/navigation'
 
+// 변호사 승인 화면은 통합 관리자 페이지(/admin)의 한 탭으로 옮겼다. 기존 주소로 들어와도 이어지게 둔다.
 export default function AdminLawyersPage() {
-  return (
-    <div className="flex flex-1 justify-center bg-white px-4 py-16 dark:bg-zinc-950">
-      <AdminLawyerDashboard />
-    </div>
-  )
+  redirect('/admin')
 }

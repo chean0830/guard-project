@@ -8,6 +8,7 @@ import {
   type LawyerProfile,
   type ProfileFormState,
 } from '@/app/lib/lawyer-profile-action'
+import { isLoginRequired, LoginRequiredDialog } from '@/app/ui/login-required-dialog'
 
 const initialState: ProfileFormState = { status: 'idle' }
 
@@ -16,6 +17,7 @@ const inputStyle =
 
 function StatusMessage({ state }: { state: ProfileFormState }) {
   if (state.status === 'error') {
+    if (isLoginRequired(state.message)) return <LoginRequiredDialog message={state.message} />
     return (
       <p className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
         {state.message}
@@ -90,6 +92,73 @@ export function LawyerSettingsForm({ profile }: { profile: LawyerProfile }) {
               defaultValue={profile.introduction ?? ''}
               className={inputStyle}
             />
+          </div>
+
+          <div className="mt-2 rounded-xl border border-orange-200 bg-orange-50/50 p-4 dark:border-orange-900/50 dark:bg-orange-950/20">
+            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">회원에게 보여줄 강점</p>
+            <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+              회원이 변호사를 직접 고를 때 이름 아래에 그대로 보여요. 사실에 근거해 작성해주세요 — 확인되지 않은
+              승소율이나 &lsquo;최고&rsquo; 같은 과장 표현은 변호사 광고 규정에 어긋날 수 있어요.
+            </p>
+            <div className="mt-4 flex flex-col gap-4">
+              <div>
+                <label htmlFor="headline" className="mb-1 block text-sm font-medium">
+                  한 줄 강점
+                </label>
+                <input
+                  id="headline"
+                  name="headline"
+                  type="text"
+                  maxLength={100}
+                  placeholder="예: 전세보증금 반환 사건 전문"
+                  defaultValue={profile.headline ?? ''}
+                  className={inputStyle}
+                />
+              </div>
+              <div>
+                <label htmlFor="careerYears" className="mb-1 block text-sm font-medium">
+                  경력 (년)
+                </label>
+                <input
+                  id="careerYears"
+                  name="careerYears"
+                  type="number"
+                  min={0}
+                  max={70}
+                  placeholder="예: 8"
+                  defaultValue={profile.careerYears ?? ''}
+                  className={inputStyle}
+                />
+              </div>
+              <div>
+                <label htmlFor="feeInfo" className="mb-1 block text-sm font-medium">
+                  수임료 안내
+                </label>
+                <input
+                  id="feeInfo"
+                  name="feeInfo"
+                  type="text"
+                  maxLength={300}
+                  placeholder="예: 첫 상담 무료 · 착수금 100만원부터"
+                  defaultValue={profile.feeInfo ?? ''}
+                  className={inputStyle}
+                />
+              </div>
+              <div>
+                <label htmlFor="achievements" className="mb-1 block text-sm font-medium">
+                  주요 실적 <span className="font-normal text-zinc-400">(한 줄에 하나씩)</span>
+                </label>
+                <textarea
+                  id="achievements"
+                  name="achievements"
+                  rows={4}
+                  maxLength={1000}
+                  placeholder={'예:\n전세보증금 반환 소송 30건 승소\n임대인 파산 사건 배당 참여'}
+                  defaultValue={profile.achievements ?? ''}
+                  className={inputStyle}
+                />
+              </div>
+            </div>
           </div>
           <button
             type="submit"

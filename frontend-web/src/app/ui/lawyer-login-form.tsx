@@ -9,8 +9,8 @@ const initialState: LawyerLoginState = { status: 'idle' }
 const inputStyle =
   'w-full rounded-xl border border-zinc-300 bg-transparent px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:border-zinc-700 dark:focus:ring-orange-900/30'
 
-export function LawyerLoginForm() {
-  const [state, formAction, pending] = useActionState(lawyerLoginAction, initialState)
+export function LawyerLoginForm({ redirectTo = '/lawyer' }: { redirectTo?: string }) {
+  const [state, formAction, pending] = useActionState(lawyerLoginAction.bind(null, redirectTo), initialState)
 
   return (
     <div className="mx-auto w-full max-w-sm">

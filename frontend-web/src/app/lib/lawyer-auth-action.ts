@@ -51,6 +51,7 @@ export async function lawyerSignupAction(
 }
 
 export async function lawyerLoginAction(
+  redirectTo: string,
   _prevState: LawyerLoginState,
   formData: FormData,
 ): Promise<LawyerLoginState> {
@@ -87,7 +88,8 @@ export async function lawyerLoginAction(
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
   })
-  redirect('/lawyer')
+  // 로그인 후에는 변호사 화면(/lawyer...) 안에서만 돌아간다 — 외부 주소로 보내는 오픈 리다이렉트 방지.
+  redirect(redirectTo.startsWith('/lawyer') && !redirectTo.startsWith('/lawyer/login') ? redirectTo : '/lawyer')
 }
 
 export async function lawyerLogoutAction() {

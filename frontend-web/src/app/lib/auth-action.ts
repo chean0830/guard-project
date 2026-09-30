@@ -2,12 +2,18 @@
 
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { tryAdminLogin } from '@/app/lib/admin-session'
 
 const BACKEND_URL = process.env.BACKEND_API_URL ?? 'http://localhost:8080'
 const SESSION_COOKIE = 'session'
 const SESSION_EMAIL_COOKIE = 'session_email'
 
 export type AuthFormState = { status: 'idle' } | { status: 'error'; message: string }
+
+/** 로그인 후 돌아갈 주소는 우리 사이트 안의 경로(/로 시작, //는 제외)만 허용한다 — 외부 사이트로 보내는 오픈 리다이렉트 방지. */
+function safeRedirectPath(path: string): string {
+  return path.startsWith('/') && !path.startsWith('//') && !path.startsWith('/\\') ? path : '/'
+}
 
 async function callAuthEndpoint(path: string, email: string, password: string) {
   let response: Response
@@ -60,7 +66,7 @@ export async function signupAction(
   }
 
   await setSessionCookies(result.token, result.email)
-  redirect(redirectTo)
+  redirect(safeRedirectPath(redirectTo))
 }
 
 export async function loginAction(
@@ -73,11 +79,15 @@ export async function loginAction(
 
   const result = await callAuthEndpoint('login', email, password)
   if (!result.ok) {
+    // 관리자도 이 화면에서 로그인한다 — 일반 회원이 아니면 관리자 계정인지 한 번 더 확인한다.
+    if (await tryAdminLogin(email, password)) {
+      redirect('/admin')
+    }
     return { status: 'error', message: result.message }
   }
 
   await setSessionCookies(result.token, result.email)
-  redirect(redirectTo)
+  redirect(safeRedirectPath(redirectTo))
 }
 
 export async function logoutAction() {

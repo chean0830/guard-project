@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { getLawyerSessionName, lawyerLogoutAction } from '@/app/lib/lawyer-auth-action'
+import { getLawyerSessionName } from '@/app/lib/lawyer-auth-action'
 import { listLawyerConsultationsAction } from '@/app/lib/lawyer-consultation-action'
 
 export default async function LawyerDashboardPage() {
@@ -32,14 +32,6 @@ export default async function LawyerDashboardPage() {
         </Link>
       </div>
 
-      <form action={lawyerLogoutAction} className="mt-8">
-        <button
-          type="submit"
-          className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-        >
-          로그아웃
-        </button>
-      </form>
     </div>
   )
 }
