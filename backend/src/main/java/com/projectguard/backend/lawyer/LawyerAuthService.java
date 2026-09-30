@@ -1,5 +1,6 @@
 package com.projectguard.backend.lawyer;
 
+import com.projectguard.backend.auth.AccountBlockedException;
 import com.projectguard.backend.auth.EmailAlreadyExistsException;
 import com.projectguard.backend.auth.InvalidCredentialsException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -88,6 +89,9 @@ public class LawyerAuthService {
                             : ""));
             case APPROVED -> { }
         }
+        if (lawyer.isBlocked()) {
+            throw new AccountBlockedException(lawyer.getBlockedReason());
+        }
         return issueToken(lawyer);
     }
 
@@ -97,7 +101,8 @@ public class LawyerAuthService {
         }
         return tokenRepository.findById(token)
                 .filter(t -> t.getExpiresAt().isAfter(Instant.now()))
-                .flatMap(t -> lawyerRepository.findById(t.getLawyerId()));
+                .flatMap(t -> lawyerRepository.findById(t.getLawyerId()))
+                .filter(l -> !l.isBlocked());
     }
 
     public void logout(String token) {
@@ -113,6 +118,28 @@ public class LawyerAuthService {
         }
         lawyer.updateProfile(name, lawFirm, specialties, introduction);
         return lawyerRepository.save(lawyer);
+    }
+
+    public Lawyer updateStrengths(Long lawyerId, String headline, Integer careerYears, String feeInfo, String achievements) {
+        Lawyer lawyer = requireLawyer(lawyerId);
+        requireMaxLength(headline, 100, "한 줄 강점");
+        requireMaxLength(feeInfo, 300, "수임료 안내");
+        requireMaxLength(achievements, 1000, "주요 실적");
+        if (careerYears != null && (careerYears < 0 || careerYears > 70)) {
+            throw new IllegalArgumentException("경력 연차를 올바르게 입력해주세요.");
+        }
+        lawyer.updateStrengths(blankToNull(headline), careerYears, blankToNull(feeInfo), blankToNull(achievements));
+        return lawyerRepository.save(lawyer);
+    }
+
+    private void requireMaxLength(String value, int max, String label) {
+        if (value != null && value.length() > max) {
+            throw new IllegalArgumentException(label + "은(는) " + max + "자 이내로 입력해주세요.");
+        }
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     public void updateEmailNotificationsEnabled(Long lawyerId, boolean enabled) {

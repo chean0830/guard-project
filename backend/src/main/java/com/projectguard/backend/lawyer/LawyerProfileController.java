@@ -28,11 +28,15 @@ public class LawyerProfileController {
 
     public record ProfileResponse(
             String email, String name, String lawFirm, String barNumber,
-            String specialties, String introduction, boolean emailNotificationsEnabled, String status
+            String specialties, String introduction, boolean emailNotificationsEnabled, String status,
+            String headline, Integer careerYears, String feeInfo, String achievements
     ) {
     }
 
-    public record UpdateProfileRequest(String name, String lawFirm, String specialties, String introduction) {
+    public record UpdateProfileRequest(
+            String name, String lawFirm, String specialties, String introduction,
+            String headline, Integer careerYears, String feeInfo, String achievements
+    ) {
     }
 
     public record NotificationSettingRequest(boolean enabled) {
@@ -52,6 +56,8 @@ public class LawyerProfileController {
             @RequestHeader(value = "Authorization", required = false) String authorization
     ) {
         Lawyer lawyer = requireLawyer(authorization);
+        lawyerAuthService.updateStrengths(
+                lawyer.getId(), request.headline(), request.careerYears(), request.feeInfo(), request.achievements());
         Lawyer updated = lawyerAuthService.updateProfile(
                 lawyer.getId(), request.name(), request.lawFirm(), request.specialties(), request.introduction());
         return toResponse(updated);
@@ -91,7 +97,8 @@ public class LawyerProfileController {
         return new ProfileResponse(
                 lawyer.getEmail(), lawyer.getName(), lawyer.getLawFirm(), lawyer.getBarNumber(),
                 lawyer.getSpecialties(), lawyer.getIntroduction(), lawyer.isEmailNotificationsEnabled(),
-                lawyer.getStatus().name()
+                lawyer.getStatus().name(),
+                lawyer.getHeadline(), lawyer.getCareerYears(), lawyer.getFeeInfo(), lawyer.getAchievements()
         );
     }
 

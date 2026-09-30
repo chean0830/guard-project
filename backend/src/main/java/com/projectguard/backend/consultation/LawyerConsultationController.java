@@ -52,7 +52,9 @@ public class LawyerConsultationController {
     ) {
     }
 
-    public record ConsultationThreadDto(String userDisplayName, List<MessageDto> messages) {
+    public record ConsultationThreadDto(
+            String userDisplayName, boolean counterpartBlocked, String blockState, List<MessageDto> messages
+    ) {
     }
 
     @GetMapping
@@ -71,7 +73,12 @@ public class LawyerConsultationController {
         Lawyer lawyer = requireLawyer(authorization);
         List<ConsultationMessage> messages = consultationService.getThreadAsLawyer(id, lawyer.getId());
         Consultation consultation = consultationService.requireConsultation(id);
-        return new ConsultationThreadDto(displayNameFor(consultation.getUserId()), messages.stream().map(this::toDto).toList());
+        return new ConsultationThreadDto(
+                displayNameFor(consultation.getUserId()),
+                consultationService.isCounterpartBlocked(consultation, SenderType.LAWYER),
+                consultationService.blockStateFor(consultation, SenderType.LAWYER),
+                messages.stream().map(this::toDto).toList()
+        );
     }
 
     @PostMapping("/{id}/messages")
@@ -137,9 +144,9 @@ public class LawyerConsultationController {
         return e.getMessage();
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public String handleBadRequest(IllegalArgumentException e) {
+    public String handleBadRequest(RuntimeException e) {
         return e.getMessage();
     }
 }

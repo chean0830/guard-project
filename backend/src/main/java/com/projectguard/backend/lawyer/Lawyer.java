@@ -43,6 +43,26 @@ public class Lawyer {
     @Column(length = 1000)
     private String introduction;
 
+    /*
+     * 회원이 변호사 목록에서 보고 고를 수 있도록 변호사가 직접 적는 강점. 관리자가 검증한 값이 아니라
+     * 변호사 본인이 작성한 정보라는 점을 목록 화면에 함께 표시한다.
+     */
+
+    /** 한 줄 강점 (예: "전세보증금 반환 소송 다수 승소") */
+    @Column(length = 100)
+    private String headline;
+
+    /** 변호사 경력 연차 */
+    private Integer careerYears;
+
+    /** 수임료 안내 (예: "첫 상담 무료, 착수금 100만원부터") */
+    @Column(length = 300)
+    private String feeInfo;
+
+    /** 주요 실적. 줄바꿈으로 여러 항목을 적는다. */
+    @Column(length = 1000)
+    private String achievements;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private LawyerStatus status = LawyerStatus.PENDING;
@@ -56,6 +76,17 @@ public class Lawyer {
 
     @Column(nullable = false)
     private boolean emailNotificationsEnabled = true;
+
+    /**
+     * 신고 처리 결과 관리자가 이용을 정지한 변호사. 승인 상태(status)와는 별개로 둔다 — 정지를
+     * 풀었을 때 다시 심사할 필요 없이 원래 승인 상태로 돌아가야 하기 때문.
+     */
+    @Column(nullable = false)
+    private boolean blocked = false;
+
+    private String blockedReason;
+
+    private Instant blockedAt;
 
     protected Lawyer() {
     }
@@ -73,6 +104,13 @@ public class Lawyer {
         this.lawFirm = lawFirm;
         this.specialties = specialties;
         this.introduction = introduction;
+    }
+
+    public void updateStrengths(String headline, Integer careerYears, String feeInfo, String achievements) {
+        this.headline = headline;
+        this.careerYears = careerYears;
+        this.feeInfo = feeInfo;
+        this.achievements = achievements;
     }
 
     public void changePasswordHash(String passwordHash) {
@@ -93,6 +131,18 @@ public class Lawyer {
         this.status = LawyerStatus.REJECTED;
         this.rejectionReason = reason;
         this.reviewedAt = Instant.now();
+    }
+
+    public void block(String reason) {
+        this.blocked = true;
+        this.blockedReason = reason;
+        this.blockedAt = Instant.now();
+    }
+
+    public void unblock() {
+        this.blocked = false;
+        this.blockedReason = null;
+        this.blockedAt = null;
     }
 
     public Long getId() {
@@ -127,6 +177,22 @@ public class Lawyer {
         return introduction;
     }
 
+    public String getHeadline() {
+        return headline;
+    }
+
+    public Integer getCareerYears() {
+        return careerYears;
+    }
+
+    public String getFeeInfo() {
+        return feeInfo;
+    }
+
+    public String getAchievements() {
+        return achievements;
+    }
+
     public boolean isEmailNotificationsEnabled() {
         return emailNotificationsEnabled;
     }
@@ -145,5 +211,17 @@ public class Lawyer {
 
     public Instant getReviewedAt() {
         return reviewedAt;
+    }
+
+    public boolean isBlocked() {
+        return blocked;
+    }
+
+    public String getBlockedReason() {
+        return blockedReason;
+    }
+
+    public Instant getBlockedAt() {
+        return blockedAt;
     }
 }

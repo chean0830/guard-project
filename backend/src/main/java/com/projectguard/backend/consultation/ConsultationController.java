@@ -56,7 +56,9 @@ public class ConsultationController {
     ) {
     }
 
-    public record ConsultationThreadDto(String lawyerName, String lawFirm, List<MessageDto> messages) {
+    public record ConsultationThreadDto(
+            String lawyerName, String lawFirm, boolean counterpartBlocked, String blockState, List<MessageDto> messages
+    ) {
     }
 
     @PostMapping
@@ -89,6 +91,8 @@ public class ConsultationController {
         return new ConsultationThreadDto(
                 lawyer != null ? lawyer.getName() : "알 수 없음",
                 lawyer != null ? lawyer.getLawFirm() : null,
+                consultationService.isCounterpartBlocked(consultation, SenderType.USER),
+                consultationService.blockStateFor(consultation, SenderType.USER),
                 messages.stream().map(this::toDto).toList()
         );
     }

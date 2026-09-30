@@ -94,6 +94,12 @@ public class AuthController {
         return e.getMessage();
     }
 
+    @ExceptionHandler(AccountBlockedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public String handleBlocked(AccountBlockedException e) {
+        return e.getMessage();
+    }
+
     @ExceptionHandler(InvalidCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public String handleInvalidCredentials(InvalidCredentialsException e) {

@@ -40,6 +40,7 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .filter(u -> u.getPasswordHash() != null && passwordEncoder.matches(password, u.getPasswordHash()))
                 .orElseThrow(() -> new InvalidCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다."));
+        requireNotBlocked(user);
         return issueToken(user);
     }
 
@@ -54,6 +55,7 @@ public class AuthService {
         }
         User user = userRepository.findByEmail(email)
                 .orElseGet(() -> userRepository.save(new User(email, provider, providerId)));
+        requireNotBlocked(user);
         return issueToken(user);
     }
 
@@ -63,7 +65,9 @@ public class AuthService {
         }
         return authTokenRepository.findById(token)
                 .filter(t -> t.getExpiresAt().isAfter(Instant.now()))
-                .flatMap(t -> userRepository.findById(t.getUserId()));
+                .flatMap(t -> userRepository.findById(t.getUserId()))
+                // 정지 처리 전에 발급된 세션도 즉시 끊기도록, 토큰이 살아있어도 정지 계정은 인증 실패로 본다.
+                .filter(u -> !u.isBlocked());
     }
 
     public void logout(String token) {
@@ -94,6 +98,12 @@ public class AuthService {
         }
         user.changePasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+    }
+
+    private void requireNotBlocked(User user) {
+        if (user.isBlocked()) {
+            throw new AccountBlockedException(user.getBlockedReason());
+        }
     }
 
     private AuthResult issueToken(User user) {

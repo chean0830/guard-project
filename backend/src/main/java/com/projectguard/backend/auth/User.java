@@ -7,6 +7,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.time.Instant;
+
 /**
  * 변호사 상담 기능을 쓰려면 로그인해야 해서 만든 최소한의 회원 정보.
  * 비밀번호는 절대 평문 저장하지 않고 BCrypt로 해시해서 저장한다 (docs/기획서.md 7번 원칙).
@@ -36,6 +38,14 @@ public class User {
     /** 변호사와의 상담 화면 등에서 이메일 대신 표시할 이름. 선택 입력이라 null일 수 있다. */
     private String name;
 
+    /** 신고 처리 결과 관리자가 이용을 정지한 계정. 로그인과 기존 세션 사용이 모두 막힌다. */
+    @Column(nullable = false)
+    private boolean blocked = false;
+
+    private String blockedReason;
+
+    private Instant blockedAt;
+
     protected User() {
     }
 
@@ -57,6 +67,18 @@ public class User {
 
     public void changePasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    public void block(String reason) {
+        this.blocked = true;
+        this.blockedReason = reason;
+        this.blockedAt = Instant.now();
+    }
+
+    public void unblock() {
+        this.blocked = false;
+        this.blockedReason = null;
+        this.blockedAt = null;
     }
 
     public Long getId() {
@@ -81,5 +103,17 @@ public class User {
 
     public String getName() {
         return name;
+    }
+
+    public boolean isBlocked() {
+        return blocked;
+    }
+
+    public String getBlockedReason() {
+        return blockedReason;
+    }
+
+    public Instant getBlockedAt() {
+        return blockedAt;
     }
 }

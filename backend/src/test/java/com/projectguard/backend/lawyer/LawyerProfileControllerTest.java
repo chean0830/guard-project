@@ -66,7 +66,7 @@ class LawyerProfileControllerTest {
                         .header("Authorization", "Bearer token-2")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new LawyerProfileController.UpdateProfileRequest("새이름", "새소속", null, null))))
+                                new LawyerProfileController.UpdateProfileRequest("새이름", "새소속", null, null, null, null, null, null))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("새이름"));
     }

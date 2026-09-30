@@ -28,7 +28,12 @@ public class BackendApplication {
 	 */
 	private static final Set<String> SENSITIVE_KEYS_REQUIRING_EXPLICIT_ENV = Set.of(
 			"MAIL_HOST", "MAIL_PORT", "MAIL_USERNAME", "MAIL_PASSWORD",
-			"VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT"
+			"VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY", "VAPID_SUBJECT",
+			// 관리자 로그인 정보와 개발용 시드 계정도 OS 환경변수가 섞여 들어오면 안 된다.
+			"ADMIN_EMAIL", "ADMIN_PASSWORD",
+			"SEED_USER_EMAIL", "SEED_USER_PASSWORD", "SEED_LAWYER_EMAIL", "SEED_LAWYER_PASSWORD",
+			// 결제 승인 시크릿 키 — 다른 프로젝트의 실제 상점 키가 섞여 들어오면 진짜 결제가 일어날 수 있다.
+			"TOSS_SECRET_KEY"
 	);
 
 	public static void main(String[] args) {
