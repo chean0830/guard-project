@@ -55,13 +55,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
         provider: providerName.toUpperCase(),
         providerId: profile.providerId,
         email: profile.email,
+        emailVerified: profile.emailVerified,
       }),
     })
 
     if (!syncResponse.ok) {
-      // 403은 이용 정지된 계정 — 백엔드가 정지 사유를 담은 안내 문구를 그대로 보여준다.
-      const blockedMessage = syncResponse.status === 403 ? await syncResponse.text() : ''
-      loginUrl.searchParams.set('oauthError', blockedMessage || '로그인 처리 중 오류가 발생했습니다.')
+      // 403(이용 정지)·400(이메일 미인증 등)은 백엔드가 사용자용 안내 문구를 주므로 그대로 보여준다.
+      const userMessage = syncResponse.status === 403 || syncResponse.status === 400 ? await syncResponse.text() : ''
+      loginUrl.searchParams.set('oauthError', userMessage || '로그인 처리 중 오류가 발생했습니다.')
       return NextResponse.redirect(loginUrl)
     }
 

@@ -8,7 +8,12 @@ export default async function ConsultListPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-12 sm:px-8">
-      <h1 className="text-2xl font-bold text-zinc-950 dark:text-zinc-50">변호사 상담</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-zinc-950 dark:text-zinc-50">변호사 상담</h1>
+        <Link href="/consult/payments" className="text-sm text-zinc-500 hover:text-orange-600 hover:underline">
+          결제 내역
+        </Link>
+      </div>
       <p className="mt-2 text-sm text-zinc-500">
         문의를 남기면 승인된 변호사 중 한 분과 무작위로 연결돼요. 실제 변호사가 직접 확인 후 답변드립니다.
       </p>

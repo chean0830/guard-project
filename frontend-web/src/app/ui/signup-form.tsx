@@ -82,6 +82,12 @@ export function SignupForm({
         </p>
       )}
 
+      <p className="mt-4 text-center text-xs leading-relaxed text-zinc-400">
+
+        가입하면 <a href="/terms" className="underline">이용약관</a>과 <a href="/privacy" className="underline">개인정보처리방침</a>에 동의하는 것으로 봅니다.
+
+      </p>
+
       <p className="mt-6 text-center text-sm text-zinc-500">
         이미 계정이 있으신가요?{' '}
         <Link

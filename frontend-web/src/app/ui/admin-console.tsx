@@ -4,12 +4,14 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { AdminLawyerDashboard } from '@/app/ui/admin-lawyer-dashboard'
 import { AdminMemberPanel } from '@/app/ui/admin-member-panel'
+import { AdminPaymentPanel } from '@/app/ui/admin-payment-panel'
 import { AdminReportPanel } from '@/app/ui/admin-report-panel'
 
 const SECTIONS = [
   { value: 'lawyers', label: '변호사 승인' },
   { value: 'reports', label: '신고 관리' },
   { value: 'members', label: '회원 관리' },
+  { value: 'payments', label: '결제 관리' },
 ] as const
 
 type Section = (typeof SECTIONS)[number]['value']
@@ -52,6 +54,7 @@ export function AdminConsole() {
         {section === 'lawyers' && <AdminLawyerDashboard onUnauthorized={handleUnauthorized} />}
         {section === 'reports' && <AdminReportPanel onUnauthorized={handleUnauthorized} />}
         {section === 'members' && <AdminMemberPanel onUnauthorized={handleUnauthorized} />}
+        {section === 'payments' && <AdminPaymentPanel onUnauthorized={handleUnauthorized} />}
       </div>
     </div>
   )

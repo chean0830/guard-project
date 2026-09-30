@@ -19,7 +19,12 @@ export default async function ChooseLawyerPage({ searchParams }: { searchParams:
       <Link href="/consult" className="mb-4 text-sm text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
         ← 변호사 상담
       </Link>
-      <h1 className="text-2xl font-bold text-zinc-950 dark:text-zinc-50">원하는 변호사 선택</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold text-zinc-950 dark:text-zinc-50">원하는 변호사 선택</h1>
+        <Link href="/consult/payments" className="text-sm text-zinc-500 hover:text-orange-600 hover:underline">
+          결제 내역
+        </Link>
+      </div>
 
       {params.paid === '1' && credits > 0 && (
         <p className="mt-4 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">

@@ -62,6 +62,12 @@ export function LoginForm({
         </button>
       </form>
 
+      <p className="mt-3 text-right text-sm">
+        <Link href="/forgot-password" className="text-zinc-500 hover:text-orange-600 hover:underline">
+          비밀번호를 잊으셨나요?
+        </Link>
+      </p>
+
       {state.status === 'error' && (
         <p className="mt-4 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
           {state.message}

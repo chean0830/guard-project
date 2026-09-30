@@ -96,3 +96,50 @@ export async function startDirectConsultationAction(
   const data = (await response.json()) as { id: number }
   return { status: 'success', consultationId: data.id }
 }
+
+export type PaymentHistoryItem = {
+  orderId: string
+  orderName: string
+  amount: number
+  status: 'PAID' | 'FAILED' | 'CANCELED' | 'REFUND_REQUESTED' | 'REFUNDED'
+  paidAt: string | null
+  canceledAt: string | null
+  consultationId: number | null
+  refundReason: string | null
+  refundRejectedReason: string | null
+}
+
+export type PaymentActionResult = { ok: true } | { ok: false; message: string }
+
+export async function getPaymentHistoryAction(): Promise<PaymentHistoryItem[]> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/payments/history`, { headers: await authHeader(), cache: 'no-store' })
+    if (response.ok) return (await response.json()) as PaymentHistoryItem[]
+  } catch {
+    // 아래에서 빈 목록
+  }
+  return []
+}
+
+async function paymentPost(path: string, body?: unknown): Promise<PaymentActionResult> {
+  let response: Response
+  try {
+    response = await fetch(`${BACKEND_URL}/api/payments/${path}`, {
+      method: 'POST',
+      headers: { ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...(await authHeader()) },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    })
+  } catch {
+    return { ok: false, message: '서버에 연결할 수 없습니다.' }
+  }
+  if (!response.ok) return { ok: false, message: (await response.text()) || '요청에 실패했습니다.' }
+  return { ok: true }
+}
+
+export async function cancelPaymentAction(orderId: string): Promise<PaymentActionResult> {
+  return paymentPost(`${encodeURIComponent(orderId)}/cancel`)
+}
+
+export async function requestRefundAction(orderId: string, reason: string): Promise<PaymentActionResult> {
+  return paymentPost(`${encodeURIComponent(orderId)}/refund-request`, { reason })
+}

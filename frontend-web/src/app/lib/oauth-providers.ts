@@ -3,7 +3,8 @@
 
 export type OAuthProviderName = 'google' | 'kakao' | 'naver'
 
-export type OAuthProfile = { providerId: string; email: string | null }
+/** emailVerified: 그 서비스가 이메일 소유를 확인했는지. 백엔드는 이 값이 true일 때만 같은 이메일의 기존 계정과 합친다. */
+export type OAuthProfile = { providerId: string; email: string | null; emailVerified: boolean }
 
 const BASE_URL = process.env.OAUTH_BASE_URL ?? 'http://localhost:3000'
 
@@ -61,8 +62,8 @@ const google: ProviderConfig = {
     const response = await fetch('https://openidconnect.googleapis.com/v1/userinfo', {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
-    const data = (await response.json()) as { sub: string; email?: string }
-    return { providerId: data.sub, email: data.email ?? null }
+    const data = (await response.json()) as { sub: string; email?: string; email_verified?: boolean }
+    return { providerId: data.sub, email: data.email ?? null, emailVerified: data.email_verified === true }
   },
 }
 
@@ -97,8 +98,16 @@ const kakao: ProviderConfig = {
     const response = await fetch('https://kapi.kakao.com/v2/user/me', {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
-    const data = (await response.json()) as { id: number; kakao_account?: { email?: string } }
-    return { providerId: String(data.id), email: data.kakao_account?.email ?? null }
+    const data = (await response.json()) as {
+      id: number
+      kakao_account?: { email?: string; is_email_verified?: boolean; is_email_valid?: boolean }
+    }
+    const account = data.kakao_account
+    return {
+      providerId: String(data.id),
+      email: account?.email ?? null,
+      emailVerified: account?.is_email_verified === true && account?.is_email_valid !== false,
+    }
   },
 }
 
@@ -129,7 +138,9 @@ const naver: ProviderConfig = {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
     const data = (await response.json()) as { response?: { id: string; email?: string } }
-    return { providerId: data.response?.id ?? '', email: data.response?.email ?? null }
+    const email = data.response?.email ?? null
+    // 네이버는 인증 여부를 따로 주지 않는다. 네이버 자체 메일함(@naver.com) 주소만 소유가 확인된 것으로 본다.
+    return { providerId: data.response?.id ?? '', email, emailVerified: Boolean(email?.toLowerCase().endsWith('@naver.com')) }
   },
 }
 

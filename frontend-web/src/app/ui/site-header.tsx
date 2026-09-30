@@ -14,7 +14,7 @@ export type HeaderSessions = {
 
 // 채팅 화면은 입력창과 대화에 집중하도록 머리글을 숨긴다.
 const CHAT_PATHS = [/^\/consult\/\d+$/, /^\/lawyer\/consultations\/\d+$/]
-const LOGIN_PATHS = ['/login', '/signup', '/lawyer/login', '/lawyer/signup']
+const LOGIN_PATHS = ['/login', '/signup', '/lawyer/login', '/lawyer/signup', '/forgot-password', '/reset-password']
 
 const linkStyle = 'text-zinc-500 transition-colors hover:text-zinc-800 dark:hover:text-zinc-200'
 const logoutStyle = 'font-semibold text-orange-600 hover:underline dark:text-orange-400'

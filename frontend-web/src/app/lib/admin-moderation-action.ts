@@ -105,3 +105,31 @@ export async function setMemberBlockedAction(type: PartyType, id: number, blocke
     ? adminFetch<null>(`/members/${segment}/${id}/block`, { method: 'POST', body: { reason: reason ?? '' } })
     : adminFetch<null>(`/members/${segment}/${id}/unblock`, { method: 'POST' })
 }
+
+export type AdminPayment = {
+  payment: {
+    orderId: string
+    orderName: string
+    amount: number
+    status: 'PAID' | 'FAILED' | 'CANCELED' | 'REFUND_REQUESTED' | 'REFUNDED'
+    paidAt: string | null
+    canceledAt: string | null
+    consultationId: number | null
+    refundReason: string | null
+    refundRejectedReason: string | null
+  }
+  userId: number
+  userEmail: string
+}
+
+export async function fetchAdminPaymentsAction(status?: string) {
+  return adminFetch<AdminPayment[]>(`/payments${status ? `?status=${status}` : ''}`)
+}
+
+export async function approveRefundAction(orderId: string) {
+  return adminFetch<null>(`/payments/${encodeURIComponent(orderId)}/refund/approve`, { method: 'POST' })
+}
+
+export async function rejectRefundAction(orderId: string, reason: string) {
+  return adminFetch<null>(`/payments/${encodeURIComponent(orderId)}/refund/reject`, { method: 'POST', body: { reason } })
+}

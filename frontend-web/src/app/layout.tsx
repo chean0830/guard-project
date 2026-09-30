@@ -48,6 +48,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col">
         <SiteHeader sessions={sessions} />
         {children}
+        <footer className="mt-auto border-t border-zinc-100 px-4 py-6 text-center text-xs text-zinc-400 dark:border-zinc-900">
+          <a href="/terms" className="hover:text-zinc-600 hover:underline dark:hover:text-zinc-300">이용약관</a>
+          <span className="mx-2">·</span>
+          <a href="/privacy" className="font-semibold hover:text-zinc-600 hover:underline dark:hover:text-zinc-300">개인정보처리방침</a>
+          <p className="mt-1">© 2026 Project Guard</p>
+        </footer>
       </body>
     </html>
   );
