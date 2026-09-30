@@ -30,6 +30,9 @@ class UserProfileControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
+    private AccountDeletionService accountDeletionService;
+
+    @MockitoBean
     private AuthService authService;
 
     @Test

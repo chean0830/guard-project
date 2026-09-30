@@ -110,7 +110,7 @@ class AccountSecurityTest {
     void 변호사도_5회_틀리면_잠긴다() {
         String address = email("lawyer-lock");
         Lawyer lawyer = lawyerAuthService.signup(address, "password123", "김변호", null, "12345",
-                List.of(new MockMultipartFile("documents", "license.pdf", "application/pdf", "dummy".getBytes())));
+                List.of(new MockMultipartFile("documents", "license.pdf", "application/pdf", "%PDF-1.4 dummy".getBytes())));
         lawyer.approve();
         lawyerRepository.save(lawyer);
 

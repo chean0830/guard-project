@@ -40,6 +40,9 @@ class AnalyzeControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private AnalysisAccessService analysisAccessService;
+
+    @MockitoBean
     private RegistryAnalysisService registryAnalysisService;
 
     @MockitoBean
@@ -55,7 +58,7 @@ class AnalyzeControllerTest {
     private ChecklistService checklistService;
 
     private MockMultipartFile samplePdf() {
-        return new MockMultipartFile("files", "test.pdf", "application/pdf", "dummy".getBytes());
+        return new MockMultipartFile("files", "test.pdf", "application/pdf", "%PDF-1.4 dummy".getBytes());
     }
 
     @Test

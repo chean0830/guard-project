@@ -40,6 +40,12 @@ public class PasswordResetController {
         return new MessageResponse("새 비밀번호가 설정됐어요. 이제 로그인할 수 있어요.");
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public String handleTooMany(IllegalStateException e) {
+        return e.getMessage();
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public String handleBadRequest(IllegalArgumentException e) {

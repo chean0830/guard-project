@@ -53,7 +53,7 @@ class ConsultationServiceTest {
     }
 
     private List<MultipartFile> oneDocument() {
-        return List.of(new MockMultipartFile("documents", "license.pdf", "application/pdf", "dummy".getBytes()));
+        return List.of(new MockMultipartFile("documents", "license.pdf", "application/pdf", "%PDF-1.4 dummy".getBytes()));
     }
 
     @Test

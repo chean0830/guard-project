@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -39,6 +40,8 @@ import java.util.List;
 @RequestMapping("/api")
 public class AnalyzeController {
 
+    private final AnalysisAccessService analysisAccessService;
+
     private static final String DISCLAIMER = "이 서비스는 법률 조언이 아니며 참고용 정보입니다.";
 
     private final RegistryAnalysisService registryAnalysisService;
@@ -52,13 +55,15 @@ public class AnalyzeController {
             MarketPriceService marketPriceService,
             BuildingRegisterService buildingRegisterService,
             RiskAssessmentService riskAssessmentService,
-            ChecklistService checklistService
+            ChecklistService checklistService,
+            AnalysisAccessService analysisAccessService
     ) {
         this.registryAnalysisService = registryAnalysisService;
         this.marketPriceService = marketPriceService;
         this.buildingRegisterService = buildingRegisterService;
         this.riskAssessmentService = riskAssessmentService;
         this.checklistService = checklistService;
+        this.analysisAccessService = analysisAccessService;
     }
 
     @PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -71,11 +76,13 @@ public class AnalyzeController {
             @RequestParam(value = "buildingName", required = false) String buildingName,
             @RequestParam(value = "exclusiveAreaSqm", required = false) Double exclusiveAreaSqm,
             @RequestParam(value = "declaredLandlordName", required = false) String declaredLandlordName,
-            @RequestParam(value = "declaredAddress", required = false) String declaredAddress
+            @RequestParam(value = "declaredAddress", required = false) String declaredAddress,
+            @RequestHeader(value = "Authorization", required = false) String authorization
     ) throws IOException {
         if (files == null || files.isEmpty()) {
             throw new NotRegistryDocumentException("등기부등본 파일을 1장 이상 업로드해주세요.");
         }
+        AnalysisAccessService.Access access = analysisAccessService.authorize(bearer(authorization));
 
         List<UploadedPage> pages = new ArrayList<>();
         for (MultipartFile file : files) {
@@ -95,8 +102,25 @@ public class AnalyzeController {
 
         List<ChecklistItem> checklist = checklistService.generate(registry, contractType);
 
+        analysisAccessService.complete(access);
         return new AnalyzeResponse(
                 registry, marketPrice, buildingInfo, result.signals(), result.hasHighRisk(), checklist, DISCLAIMER);
+    }
+
+    private static String bearer(String authorization) {
+        return authorization != null && authorization.startsWith("Bearer ") ? authorization.substring(7) : null;
+    }
+
+    @ExceptionHandler(com.projectguard.backend.auth.InvalidCredentialsException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public String handleLoginRequired(com.projectguard.backend.auth.InvalidCredentialsException e) {
+        return e.getMessage();
+    }
+
+    @ExceptionHandler(AnalysisPaymentRequiredException.class)
+    @ResponseStatus(HttpStatus.PAYMENT_REQUIRED)
+    public String handlePaymentRequired(AnalysisPaymentRequiredException e) {
+        return e.getMessage();
     }
 
     @ExceptionHandler(IOException.class)

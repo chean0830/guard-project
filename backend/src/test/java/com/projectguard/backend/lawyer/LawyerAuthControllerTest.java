@@ -38,7 +38,7 @@ class LawyerAuthControllerTest {
     @Test
     void 서류를_첨부해_가입하면_대기중_메시지를_반환한다() throws Exception {
         Lawyer pending = new Lawyer("lawyer@example.com", "hash", "김변호", "법무법인 테스트", "12345");
-        MockMultipartFile document = new MockMultipartFile("documents", "license.pdf", "application/pdf", "dummy".getBytes());
+        MockMultipartFile document = new MockMultipartFile("documents", "license.pdf", "application/pdf", "%PDF-1.4 dummy".getBytes());
 
         when(lawyerAuthService.signup(eq("lawyer@example.com"), eq("password123"), eq("김변호"),
                 eq("법무법인 테스트"), eq("12345"), any()))

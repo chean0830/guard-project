@@ -1,6 +1,7 @@
 package com.projectguard.backend.auth;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -16,13 +17,28 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/profile")
 public class UserProfileController {
 
-    private final AuthService authService;
-
-    public UserProfileController(AuthService authService) {
-        this.authService = authService;
+    public record WithdrawRequest(String password, String confirmText) {
     }
 
-    public record ProfileResponse(String email, String name, String provider) {
+
+    private final AuthService authService;
+    private final AccountDeletionService accountDeletionService;
+
+    public UserProfileController(AuthService authService, AccountDeletionService accountDeletionService) {
+        this.authService = authService;
+        this.accountDeletionService = accountDeletionService;
+    }
+
+    /** 회원 탈퇴. 이메일 가입은 비밀번호, 소셜 전용 계정은 확인 문구로 본인 의사를 확인한다. */
+    @DeleteMapping
+    public void withdraw(
+            @RequestBody WithdrawRequest request,
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        accountDeletionService.withdraw(requireUser(authorization).getId(), request.password(), request.confirmText());
+    }
+
+    public record ProfileResponse(String email, String name, String provider, boolean hasPassword) {
     }
 
     public record UpdateProfileRequest(String name) {
@@ -68,12 +84,18 @@ public class UserProfileController {
     }
 
     private ProfileResponse toResponse(User user) {
-        return new ProfileResponse(user.getEmail(), user.getName(), user.getProvider());
+        return new ProfileResponse(user.getEmail(), user.getName(), user.getProvider(), user.getPasswordHash() != null);
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public String handleInvalidCredentials(InvalidCredentialsException e) {
+        return e.getMessage();
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public String handleConflict(IllegalStateException e) {
         return e.getMessage();
     }
 

@@ -1,6 +1,7 @@
 package com.projectguard.backend.auth;
 
 import com.projectguard.backend.common.AccountMailService;
+import com.projectguard.backend.common.RateLimitService;
 import com.projectguard.backend.lawyer.LawyerAuthService;
 import com.projectguard.backend.lawyer.LawyerRepository;
 import org.slf4j.Logger;
@@ -28,6 +29,7 @@ public class PasswordResetService {
     private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
     private static final Duration TOKEN_TTL = Duration.ofMinutes(30);
     private static final SecureRandom RANDOM = new SecureRandom();
+    public static final int MAX_MAILS_PER_DAY = 5;
 
     private final PasswordResetTokenRepository tokenRepository;
     private final UserRepository userRepository;
@@ -36,6 +38,8 @@ public class PasswordResetService {
     private final LawyerAuthService lawyerAuthService;
     private final AccountMailService mailService;
     private final String frontendOrigin;
+    private final RateLimitService rateLimitService;
+    private final boolean logResetLinks;
 
     public PasswordResetService(
             PasswordResetTokenRepository tokenRepository,
@@ -44,7 +48,9 @@ public class PasswordResetService {
             AuthService authService,
             LawyerAuthService lawyerAuthService,
             AccountMailService mailService,
-            @Value("${FRONTEND_ORIGIN:http://localhost:3000}") String frontendOrigin
+            @Value("${FRONTEND_ORIGIN:http://localhost:3000}") String frontendOrigin,
+            RateLimitService rateLimitService,
+            @Value("${LOG_RESET_LINKS:false}") boolean logResetLinks
     ) {
         this.tokenRepository = tokenRepository;
         this.userRepository = userRepository;
@@ -53,6 +59,8 @@ public class PasswordResetService {
         this.lawyerAuthService = lawyerAuthService;
         this.mailService = mailService;
         this.frontendOrigin = frontendOrigin;
+        this.rateLimitService = rateLimitService;
+        this.logResetLinks = logResetLinks;
     }
 
     /** accountType: "USER" 또는 "LAWYER". 해당 계정이 있으면 재설정 링크를 메일로 보낸다. 없어도 조용히 끝난다. */
@@ -61,6 +69,10 @@ public class PasswordResetService {
             throw new IllegalArgumentException("이메일을 입력해주세요.");
         }
         String type = "LAWYER".equals(accountType) ? "LAWYER" : "USER";
+        // 가입 여부와 상관없이 이메일마다 센다 — 그래야 제한에 걸리는지로 가입 여부를 알아낼 수 없다.
+        if (!rateLimitService.tryConsume("reset-mail-" + type, email, MAX_MAILS_PER_DAY)) {
+            throw new IllegalStateException("비밀번호 찾기 메일은 하루 " + MAX_MAILS_PER_DAY + "번까지 보낼 수 있어요. 내일 다시 시도해주세요.");
+        }
         Optional<Long> accountId = "LAWYER".equals(type)
                 ? lawyerRepository.findByEmail(email.trim()).map(l -> l.getId())
                 : userRepository.findByEmail(email.trim()).map(User::getId);
@@ -79,8 +91,13 @@ public class PasswordResetService {
                         + link + "\n\n"
                         + "비밀번호 재설정을 요청하지 않으셨다면 이 메일을 무시해주세요.");
         if (!sent) {
-            // 메일 설정이 없는 개발 환경에서만 여기로 온다 — 링크를 로그로 남겨 개발자가 흐름을 확인할 수 있게 한다.
-            log.warn("[개발용] 메일 미설정으로 비밀번호 재설정 링크를 로그에 남깁니다: {}", link);
+            // 링크 자체가 곧 계정 열쇠라, 로그에 남기는 건 LOG_RESET_LINKS=true로 명시한 개발 환경에서만 한다.
+            // 운영에서 메일 설정을 빠뜨려도 로그를 볼 수 있는 사람이 남의 계정 비밀번호를 바꿀 수 없게.
+            if (logResetLinks) {
+                log.warn("[개발용] 메일 미설정으로 비밀번호 재설정 링크를 로그에 남깁니다: {}", link);
+            } else {
+                log.error("메일 설정이 없어 비밀번호 재설정 메일을 보내지 못했습니다. MAIL_* 설정을 확인하세요.");
+            }
         }
     }
 

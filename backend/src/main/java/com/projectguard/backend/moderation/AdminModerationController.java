@@ -1,9 +1,15 @@
 package com.projectguard.backend.moderation;
 
+import com.projectguard.backend.auth.User;
 import com.projectguard.backend.auth.UserRepository;
 import com.projectguard.backend.consultation.ConsultationMessageRepository;
 import com.projectguard.backend.consultation.SenderType;
+import com.projectguard.backend.lawyer.Lawyer;
 import com.projectguard.backend.lawyer.LawyerRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -114,24 +120,44 @@ public class AdminModerationController {
         moderationService.dismissReport(id);
     }
 
+    /** 목록 한 페이지. 회원·변호사가 많아져도 관리자 화면이 느려지지 않도록 20명씩 나눠 보낸다. */
+    public record PageResponse<T>(List<T> items, int page, int totalPages, long totalElements) {
+    }
+
+    private static final int PAGE_SIZE = 20;
+
+    private static Pageable pageOf(int page) {
+        return PageRequest.of(Math.max(0, page), PAGE_SIZE, Sort.by(Sort.Direction.DESC, "id"));
+    }
+
     @GetMapping("/members/users")
-    public List<UserSummary> listUsers() {
-        return userRepository.findAll().stream()
-                .map(u -> new UserSummary(
-                        u.getId(), u.getEmail(), u.getName(), u.getProvider(),
-                        u.isBlocked(), u.getBlockedReason(), u.getBlockedAt(),
-                        moderationService.reportCountAgainst(SenderType.USER, u.getId())))
-                .toList();
+    public PageResponse<UserSummary> listUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String q
+    ) {
+        Page<User> users = q == null || q.isBlank()
+                ? userRepository.findAll(pageOf(page))
+                : userRepository.findByEmailContainingIgnoreCaseOrNameContainingIgnoreCase(q.trim(), q.trim(), pageOf(page));
+        return new PageResponse<>(users.map(u -> new UserSummary(
+                u.getId(), u.getEmail(), u.getName(), u.getProvider(),
+                u.isBlocked(), u.getBlockedReason(), u.getBlockedAt(),
+                moderationService.reportCountAgainst(SenderType.USER, u.getId()))).getContent(),
+                users.getNumber(), users.getTotalPages(), users.getTotalElements());
     }
 
     @GetMapping("/members/lawyers")
-    public List<LawyerMemberSummary> listLawyers() {
-        return lawyerRepository.findAll().stream()
-                .map(l -> new LawyerMemberSummary(
-                        l.getId(), l.getEmail(), l.getName(), l.getLawFirm(), l.getStatus().name(),
-                        l.isBlocked(), l.getBlockedReason(), l.getBlockedAt(),
-                        moderationService.reportCountAgainst(SenderType.LAWYER, l.getId())))
-                .toList();
+    public PageResponse<LawyerMemberSummary> listLawyers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String q
+    ) {
+        Page<Lawyer> lawyers = q == null || q.isBlank()
+                ? lawyerRepository.findAll(pageOf(page))
+                : lawyerRepository.findByEmailContainingIgnoreCaseOrNameContainingIgnoreCase(q.trim(), q.trim(), pageOf(page));
+        return new PageResponse<>(lawyers.map(l -> new LawyerMemberSummary(
+                l.getId(), l.getEmail(), l.getName(), l.getLawFirm(), l.getStatus().name(),
+                l.isBlocked(), l.getBlockedReason(), l.getBlockedAt(),
+                moderationService.reportCountAgainst(SenderType.LAWYER, l.getId()))).getContent(),
+                lawyers.getNumber(), lawyers.getTotalPages(), lawyers.getTotalElements());
     }
 
     @PostMapping("/members/users/{id}/block")

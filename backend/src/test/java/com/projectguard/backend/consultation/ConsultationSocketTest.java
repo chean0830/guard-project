@@ -65,7 +65,7 @@ class ConsultationSocketTest {
             lawyerRepository.save(l);
         });
         Lawyer lawyer = lawyerAuthService.signup("ws-lawyer-" + suffix + "@example.com", "password123", "김변호", null, "12345",
-                List.of(new MockMultipartFile("documents", "license.pdf", "application/pdf", "dummy".getBytes())));
+                List.of(new MockMultipartFile("documents", "license.pdf", "application/pdf", "%PDF-1.4 dummy".getBytes())));
         lawyer.approve();
         lawyerRepository.save(lawyer);
         lawyerId = lawyer.getId();

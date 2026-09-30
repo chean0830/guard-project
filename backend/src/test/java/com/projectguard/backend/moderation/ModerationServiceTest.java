@@ -60,7 +60,7 @@ class ModerationServiceTest {
         // 다른 테스트가 남긴 승인 변호사가 매칭되지 않도록, 이 테스트의 변호사 한 명만 승인 상태로 둔다.
         lawyerRepository.findAll().forEach(l -> l.reject("테스트 격리"));
         Lawyer lawyer = lawyerAuthService.signup("mod-lawyer@example.com", "password123", "김변호", null, "12345",
-                List.of(new MockMultipartFile("documents", "license.pdf", "application/pdf", "dummy".getBytes())));
+                List.of(new MockMultipartFile("documents", "license.pdf", "application/pdf", "%PDF-1.4 dummy".getBytes())));
         lawyer.approve();
         lawyerRepository.save(lawyer);
         lawyerId = lawyer.getId();

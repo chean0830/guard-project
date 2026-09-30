@@ -52,7 +52,7 @@ public class ConsultationController {
     }
 
     public record ConsultationSummaryDto(
-            Long id, String lawyerName, String lawFirm, String lastMessagePreview, Instant lastMessageAt, long unreadCount
+            Long id, Long lawyerId, String lawyerName, String lawFirm, String lastMessagePreview, Instant lastMessageAt, long unreadCount
     ) {
     }
 
@@ -130,6 +130,7 @@ public class ConsultationController {
         long unread = consultationService.unreadCountForUser(consultation.getId());
         return new ConsultationSummaryDto(
                 consultation.getId(),
+                consultation.getLawyerId(),
                 lawyer != null ? lawyer.getName() : "알 수 없음",
                 lawyer != null ? lawyer.getLawFirm() : null,
                 preview,

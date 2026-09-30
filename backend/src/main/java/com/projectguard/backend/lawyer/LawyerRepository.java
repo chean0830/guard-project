@@ -1,5 +1,7 @@
 package com.projectguard.backend.lawyer;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -9,4 +11,6 @@ public interface LawyerRepository extends JpaRepository<Lawyer, Long> {
     Optional<Lawyer> findByEmail(String email);
 
     List<Lawyer> findByStatus(LawyerStatus status);
+
+    Page<Lawyer> findByEmailContainingIgnoreCaseOrNameContainingIgnoreCase(String email, String name, Pageable pageable);
 }

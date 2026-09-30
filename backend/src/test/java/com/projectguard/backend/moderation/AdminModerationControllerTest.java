@@ -60,13 +60,14 @@ class AdminModerationControllerTest {
     void 회원_목록에_정지여부와_신고횟수를_포함한다() throws Exception {
         User user = new User("blocked@example.com", "hash");
         user.block("욕설·모욕");
-        when(userRepository.findAll()).thenReturn(List.of(user));
+        when(userRepository.findAll(org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(user)));
 
         mockMvc.perform(get("/api/admin/members/users").header("X-Admin-Secret", "admin-secret"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].email").value("blocked@example.com"))
-                .andExpect(jsonPath("$[0].blocked").value(true))
-                .andExpect(jsonPath("$[0].blockedReason").value("욕설·모욕"));
+                .andExpect(jsonPath("$.items[0].email").value("blocked@example.com"))
+                .andExpect(jsonPath("$.items[0].blocked").value(true))
+                .andExpect(jsonPath("$.items[0].blockedReason").value("욕설·모욕"));
     }
 
     @Test

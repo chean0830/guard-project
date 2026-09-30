@@ -23,9 +23,11 @@ public interface PaymentOrderRepository extends JpaRepository<PaymentOrder, Long
 
     List<PaymentOrder> findByStatusNotOrderByCreatedAtDesc(PaymentStatus excluded);
 
-    long countByUserIdAndStatusAndConsultationIdIsNull(Long userId, PaymentStatus status);
+    long countByUserIdAndProductTypeAndStatusAndUsedAtIsNullAndConsultationIdIsNull(
+            Long userId, ProductType productType, PaymentStatus status);
 
     /** 이용권 사용 시 같은 이용권이 두 번 쓰이지 않도록 잠그고 가져온다. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    List<PaymentOrder> findByUserIdAndStatusAndConsultationIdIsNullOrderByPaidAtAsc(Long userId, PaymentStatus status);
+    List<PaymentOrder> findByUserIdAndProductTypeAndStatusAndUsedAtIsNullAndConsultationIdIsNullOrderByPaidAtAsc(
+            Long userId, ProductType productType, PaymentStatus status);
 }

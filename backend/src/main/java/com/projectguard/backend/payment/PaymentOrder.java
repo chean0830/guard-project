@@ -33,6 +33,14 @@ public class PaymentOrder {
     @Column(nullable = false)
     private long amount;
 
+    /** 어떤 이용권인지. 이 칸이 생기기 전 결제는 모두 변호사 선택 이용권이었으므로 DB 기본값도 그것으로 둔다. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "varchar(30) default 'LAWYER_SELECTION'")
+    private ProductType productType = ProductType.LAWYER_SELECTION;
+
+    /** 이용권을 쓴 시각. 변호사 선택은 상담 시작 때, 분석 이용권은 분석 성공 때 채워진다. */
+    private Instant usedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentStatus status = PaymentStatus.READY;
@@ -65,9 +73,31 @@ public class PaymentOrder {
     }
 
     public PaymentOrder(String orderId, Long userId, long amount) {
+        this(orderId, userId, ProductType.LAWYER_SELECTION);
+        this.amount = amount;
+    }
+
+    public PaymentOrder(String orderId, Long userId, ProductType productType) {
         this.orderId = orderId;
         this.userId = userId;
-        this.amount = amount;
+        this.productType = productType;
+        this.amount = productType.getPrice();
+    }
+
+    public ProductType getProductType() {
+        return productType;
+    }
+
+    public Instant getUsedAt() {
+        return usedAt;
+    }
+
+    public boolean isUsed() {
+        return usedAt != null || consultationId != null;
+    }
+
+    public void markUsed() {
+        this.usedAt = Instant.now();
     }
 
     public void markPaid(String paymentKey) {
@@ -120,6 +150,7 @@ public class PaymentOrder {
 
     public void useFor(Long consultationId) {
         this.consultationId = consultationId;
+        this.usedAt = Instant.now();
     }
 
     public Long getId() {

@@ -61,7 +61,7 @@ class PaymentServiceTest {
 
     private Lawyer approvedLawyer(String name) {
         Lawyer lawyer = lawyerAuthService.signup(name + "-" + UUID.randomUUID() + "@example.com", "password123", name, null, "12345",
-                List.of(new MockMultipartFile("documents", "license.pdf", "application/pdf", "dummy".getBytes())));
+                List.of(new MockMultipartFile("documents", "license.pdf", "application/pdf", "%PDF-1.4 dummy".getBytes())));
         lawyer.approve();
         return lawyerRepository.save(lawyer);
     }

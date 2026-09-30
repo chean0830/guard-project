@@ -33,8 +33,12 @@ public class PaymentService {
     }
 
     public PaymentOrder createOrder(Long userId) {
+        return createOrder(userId, ProductType.LAWYER_SELECTION);
+    }
+
+    public PaymentOrder createOrder(Long userId, ProductType productType) {
         String orderId = "PG-" + UUID.randomUUID();
-        return orderRepository.save(new PaymentOrder(orderId, userId, LAWYER_SELECTION_PRICE));
+        return orderRepository.save(new PaymentOrder(orderId, userId, productType));
     }
 
     /**
@@ -74,7 +78,27 @@ public class PaymentService {
     }
 
     public long availableCredits(Long userId) {
-        return orderRepository.countByUserIdAndStatusAndConsultationIdIsNull(userId, PaymentStatus.PAID);
+        return availableCredits(userId, ProductType.LAWYER_SELECTION);
+    }
+
+    public long availableCredits(Long userId, ProductType productType) {
+        return orderRepository.countByUserIdAndProductTypeAndStatusAndUsedAtIsNullAndConsultationIdIsNull(
+                userId, productType, PaymentStatus.PAID);
+    }
+
+    /** 분석 이용권 1장을 사용 처리한다. 분석이 성공한 뒤에만 호출해서, 실패한 분석에는 이용권이 줄지 않게 한다. */
+    @Transactional
+    public boolean consumeAnalysisCredit(Long userId) {
+        List<PaymentOrder> credits = orderRepository
+                .findByUserIdAndProductTypeAndStatusAndUsedAtIsNullAndConsultationIdIsNullOrderByPaidAtAsc(
+                        userId, ProductType.ANALYSIS, PaymentStatus.PAID);
+        if (credits.isEmpty()) {
+            return false;
+        }
+        PaymentOrder credit = credits.get(0);
+        credit.markUsed();
+        orderRepository.save(credit);
+        return true;
     }
 
     /** 회원 본인의 결제 내역 (결제창만 열고 끝난 주문은 제외). */
@@ -86,7 +110,7 @@ public class PaymentService {
     @Transactional
     public PaymentOrder cancelUnused(Long userId, String orderId) {
         PaymentOrder order = lockOwnOrder(userId, orderId);
-        if (order.getStatus() != PaymentStatus.PAID || order.getConsultationId() != null) {
+        if (order.getStatus() != PaymentStatus.PAID || order.isUsed()) {
             throw new PaymentException("사용하지 않은 이용권만 바로 취소할 수 있어요. 이미 사용했다면 환불 요청을 해주세요.");
         }
         tossPaymentsClient.cancel(order.getPaymentKey(), order.getOrderId(), "미사용 이용권 결제 취소 (회원 요청)");
@@ -104,7 +128,7 @@ public class PaymentService {
             throw new PaymentException("환불 사유는 500자 이내로 입력해주세요.");
         }
         PaymentOrder order = lockOwnOrder(userId, orderId);
-        if (order.getStatus() != PaymentStatus.PAID || order.getConsultationId() == null) {
+        if (order.getStatus() != PaymentStatus.PAID || !order.isUsed()) {
             throw new PaymentException("사용한 이용권만 환불 요청할 수 있어요. 사용하지 않았다면 바로 결제 취소할 수 있어요.");
         }
         order.requestRefund(reason.trim());
@@ -151,7 +175,8 @@ public class PaymentService {
     @Transactional
     public Consultation startDirectConsultation(Long userId, Long lawyerId, String message) {
         List<PaymentOrder> credits = orderRepository
-                .findByUserIdAndStatusAndConsultationIdIsNullOrderByPaidAtAsc(userId, PaymentStatus.PAID);
+                .findByUserIdAndProductTypeAndStatusAndUsedAtIsNullAndConsultationIdIsNullOrderByPaidAtAsc(
+                        userId, ProductType.LAWYER_SELECTION, PaymentStatus.PAID);
         if (credits.isEmpty()) {
             throw new PaymentException("변호사를 직접 선택하려면 이용권이 필요합니다. 결제 후 이용해주세요.");
         }

@@ -35,6 +35,12 @@ public class PaymentController {
         this.authService = authService;
     }
 
+    public record OrderRequest(ProductType productType) {
+    }
+
+    public record ConfirmResponse(String productType, long credits) {
+    }
+
     public record OrderResponse(String orderId, long amount, String orderName) {
     }
 
@@ -52,7 +58,7 @@ public class PaymentController {
 
     /** 결제 내역 한 줄. usable: 아직 쓰지 않아 바로 취소 가능한 이용권인지. */
     public record PaymentHistoryItem(
-            String orderId, String orderName, long amount, String status, Instant paidAt, Instant canceledAt,
+            String orderId, String productType, String orderName, long amount, String status, Instant paidAt, Instant canceledAt, boolean used,
             Long consultationId, String refundReason, String refundRejectedReason
     ) {
     }
@@ -67,13 +73,17 @@ public class PaymentController {
     }
 
     @PostMapping("/api/payments/orders")
-    public OrderResponse createOrder(@RequestHeader(value = "Authorization", required = false) String authorization) {
-        PaymentOrder order = paymentService.createOrder(requireUser(authorization).getId());
-        return new OrderResponse(order.getOrderId(), order.getAmount(), PaymentService.ORDER_NAME);
+    public OrderResponse createOrder(
+            @RequestBody(required = false) OrderRequest request,
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        ProductType product = request != null && request.productType() != null ? request.productType() : ProductType.LAWYER_SELECTION;
+        PaymentOrder order = paymentService.createOrder(requireUser(authorization).getId(), product);
+        return new OrderResponse(order.getOrderId(), order.getAmount(), product.getOrderName());
     }
 
     @PostMapping("/api/payments/confirm")
-    public CreditsResponse confirm(
+    public ConfirmResponse confirm(
             @RequestBody ConfirmRequest request,
             @RequestHeader(value = "Authorization", required = false) String authorization
     ) {
@@ -81,8 +91,8 @@ public class PaymentController {
         if (request.paymentKey() == null || request.orderId() == null || request.amount() == null) {
             throw new PaymentException("결제 정보가 올바르지 않습니다.");
         }
-        paymentService.confirm(user.getId(), request.paymentKey(), request.orderId(), request.amount());
-        return new CreditsResponse(paymentService.availableCredits(user.getId()), PaymentService.LAWYER_SELECTION_PRICE);
+        PaymentOrder order = paymentService.confirm(user.getId(), request.paymentKey(), request.orderId(), request.amount());
+        return new ConfirmResponse(order.getProductType().name(), paymentService.availableCredits(user.getId(), order.getProductType()));
     }
 
     @GetMapping("/api/payments/credits")
@@ -117,7 +127,8 @@ public class PaymentController {
 
     static PaymentHistoryItem toHistoryItem(PaymentOrder o) {
         return new PaymentHistoryItem(
-                o.getOrderId(), PaymentService.ORDER_NAME, o.getAmount(), o.getStatus().name(), o.getPaidAt(), o.getCanceledAt(),
+                o.getOrderId(), o.getProductType().name(), o.getProductType().getOrderName(), o.getAmount(), o.getStatus().name(),
+                o.getPaidAt(), o.getCanceledAt(), o.isUsed(),
                 o.getConsultationId(), o.getRefundReason(), o.getRefundRejectedReason()
         );
     }

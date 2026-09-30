@@ -4,6 +4,7 @@ import com.projectguard.backend.auth.AccountBlockedException;
 import com.projectguard.backend.auth.EmailAlreadyExistsException;
 import com.projectguard.backend.auth.InvalidCredentialsException;
 import com.projectguard.backend.auth.LoginLockedException;
+import com.projectguard.backend.common.UploadFileTypes;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -64,13 +65,19 @@ public class LawyerAuthService {
         if (lawyerRepository.findByEmail(email).isPresent()) {
             throw new EmailAlreadyExistsException("이미 가입 신청된 이메일입니다.");
         }
+        // 관리자가 여는 파일이라, 실행 파일·HTML 등이 섞이지 않도록 실제 내용으로 형식을 확인한다.
+        List<byte[]> contents = attachments.stream().map(this::readBytes).toList();
+        List<String> detectedTypes = contents.stream()
+                .map(bytes -> UploadFileTypes.detect(bytes).orElseThrow(() -> new IllegalArgumentException(
+                        "자격 서류는 " + UploadFileTypes.ALLOWED_DESCRIPTION + " 파일만 올릴 수 있어요.")))
+                .toList();
 
         Lawyer lawyer = lawyerRepository.save(
                 new Lawyer(email, passwordEncoder.encode(password), name, lawFirm, barNumber)
         );
-        for (MultipartFile file : attachments) {
+        for (int i = 0; i < attachments.size(); i++) {
             documentRepository.save(new LawyerCredentialDocument(
-                    lawyer, file.getOriginalFilename(), file.getContentType(), readBytes(file)
+                    lawyer, attachments.get(i).getOriginalFilename(), detectedTypes.get(i), contents.get(i)
             ));
         }
         return lawyer;
