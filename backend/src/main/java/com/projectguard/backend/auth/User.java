@@ -46,6 +46,15 @@ public class User {
 
     private Instant blockedAt;
 
+    /** 연속 비밀번호 오류 횟수. 성공하거나 비밀번호를 재설정하면 0으로 돌아간다. */
+    // 기존 행이 있는 DB에 컬럼을 추가해도 실패하지 않도록 기본값을 DB에도 둔다.
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private int failedLoginCount = 0;
+
+    /** 비밀번호를 5회 연속 틀려 잠긴 상태. 비밀번호 찾기(이메일 인증)로만 풀린다. */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean loginLocked = false;
+
     protected User() {
     }
 
@@ -67,6 +76,28 @@ public class User {
 
     public void changePasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
+    }
+
+    /** 비밀번호 오류를 기록하고, 한도에 도달하면 잠근다. 잠겼으면 true. */
+    public boolean recordLoginFailure(int maxAttempts) {
+        this.failedLoginCount++;
+        if (this.failedLoginCount >= maxAttempts) {
+            this.loginLocked = true;
+        }
+        return this.loginLocked;
+    }
+
+    public void resetLoginFailures() {
+        this.failedLoginCount = 0;
+        this.loginLocked = false;
+    }
+
+    public int getFailedLoginCount() {
+        return failedLoginCount;
+    }
+
+    public boolean isLoginLocked() {
+        return loginLocked;
     }
 
     public void block(String reason) {

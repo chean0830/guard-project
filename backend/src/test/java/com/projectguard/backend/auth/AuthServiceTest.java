@@ -78,7 +78,7 @@ class AuthServiceTest {
 
     @Test
     void 소셜_로그인은_처음이면_새_계정을_만든다() {
-        AuthResult result = authService.oauthLogin("GOOGLE", "google-uid-1", "oauth1@example.com");
+        AuthResult result = authService.oauthLogin("GOOGLE", "google-uid-1", "oauth1@example.com", true);
 
         assertTrue(authService.validate(result.token()).isPresent());
         assertEquals("GOOGLE", authService.validate(result.token()).get().getProvider());
@@ -86,8 +86,8 @@ class AuthServiceTest {
 
     @Test
     void 같은_이메일로_소셜_로그인하면_기존_계정으로_로그인된다() {
-        AuthResult first = authService.oauthLogin("GOOGLE", "google-uid-2", "oauth2@example.com");
-        AuthResult second = authService.oauthLogin("GOOGLE", "google-uid-2", "oauth2@example.com");
+        AuthResult first = authService.oauthLogin("GOOGLE", "google-uid-2", "oauth2@example.com", true);
+        AuthResult second = authService.oauthLogin("GOOGLE", "google-uid-2", "oauth2@example.com", true);
 
         assertEquals(authService.validate(first.token()).get().getId(), authService.validate(second.token()).get().getId());
     }
@@ -95,14 +95,14 @@ class AuthServiceTest {
     @Test
     void 이메일로_가입한_계정과_같은_이메일로_소셜로그인하면_같은_계정으로_합쳐진다() {
         authService.signup("shared@example.com", "password123");
-        AuthResult oauthResult = authService.oauthLogin("KAKAO", "kakao-uid-1", "shared@example.com");
+        AuthResult oauthResult = authService.oauthLogin("KAKAO", "kakao-uid-1", "shared@example.com", true);
 
         assertEquals("shared@example.com", authService.validate(oauthResult.token()).get().getEmail());
     }
 
     @Test
     void 소셜_로그인인데_이메일_동의를_안했으면_예외가_난다() {
-        assertThrows(IllegalArgumentException.class, () -> authService.oauthLogin("KAKAO", "kakao-uid-2", null));
+        assertThrows(IllegalArgumentException.class, () -> authService.oauthLogin("KAKAO", "kakao-uid-2", null, true));
     }
 
     @Test
@@ -138,7 +138,7 @@ class AuthServiceTest {
 
     @Test
     void 소셜_로그인_계정은_비밀번호를_변경할_수_없다() {
-        AuthResult result = authService.oauthLogin("GOOGLE", "google-uid-3", "oauthpw@example.com");
+        AuthResult result = authService.oauthLogin("GOOGLE", "google-uid-3", "oauthpw@example.com", true);
         Long userId = authService.validate(result.token()).get().getId();
 
         assertThrows(IllegalArgumentException.class,

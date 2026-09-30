@@ -96,14 +96,14 @@ class AuthControllerTest {
 
     @Test
     void 내부_비밀키가_맞으면_소셜로그인을_동기화한다() throws Exception {
-        when(authService.oauthLogin("GOOGLE", "uid-1", "oauth@example.com"))
+        when(authService.oauthLogin("GOOGLE", "uid-1", "oauth@example.com", true))
                 .thenReturn(new AuthResult("token-xyz", "oauth@example.com"));
 
         mockMvc.perform(post("/api/auth/oauth-sync")
                         .header("X-Internal-Secret", "test-secret")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new AuthController.OAuthSyncRequest("GOOGLE", "uid-1", "oauth@example.com"))))
+                                new AuthController.OAuthSyncRequest("GOOGLE", "uid-1", "oauth@example.com", true))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("token-xyz"));
     }
@@ -113,14 +113,14 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/oauth-sync")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new AuthController.OAuthSyncRequest("GOOGLE", "uid-1", "oauth@example.com"))))
+                                new AuthController.OAuthSyncRequest("GOOGLE", "uid-1", "oauth@example.com", true))))
                 .andExpect(status().isUnauthorized());
 
         mockMvc.perform(post("/api/auth/oauth-sync")
                         .header("X-Internal-Secret", "wrong-secret")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new AuthController.OAuthSyncRequest("GOOGLE", "uid-1", "oauth@example.com"))))
+                                new AuthController.OAuthSyncRequest("GOOGLE", "uid-1", "oauth@example.com", true))))
                 .andExpect(status().isUnauthorized());
     }
 }

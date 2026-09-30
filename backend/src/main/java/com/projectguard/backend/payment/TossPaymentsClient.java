@@ -57,6 +57,28 @@ public class TossPaymentsClient {
         }
     }
 
+    /** 결제 전액 취소. 결제 취소(미사용 이용권)와 관리자 승인 환불에 모두 쓴다. */
+    public void cancel(String paymentKey, String orderId, String reason) {
+        if (secretKey.isBlank()) {
+            throw new PaymentException("결제 설정이 되어 있지 않습니다. 관리자에게 문의해주세요.");
+        }
+        String basic = Base64.getEncoder().encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
+        try {
+            restClient.post()
+                    .uri("https://api.tosspayments.com/v1/payments/{paymentKey}/cancel", paymentKey)
+                    .header("Authorization", "Basic " + basic)
+                    .header("Idempotency-Key", "cancel-" + orderId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("cancelReason", reason))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientResponseException e) {
+            throw new PaymentException(tossErrorMessage(e.getResponseBodyAsString()));
+        } catch (RuntimeException e) {
+            throw new PaymentException("결제 취소 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        }
+    }
+
     private String tossErrorMessage(String body) {
         try {
             JsonNode node = objectMapper.readTree(body);

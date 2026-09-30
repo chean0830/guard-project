@@ -1,5 +1,6 @@
 package com.projectguard.backend.lawyer;
 
+import com.projectguard.backend.common.AccountMailService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,13 +29,16 @@ public class LawyerAdminController {
 
     private final LawyerRepository lawyerRepository;
     private final LawyerCredentialDocumentRepository documentRepository;
+    private final AccountMailService mailService;
 
     public LawyerAdminController(
             LawyerRepository lawyerRepository,
-            LawyerCredentialDocumentRepository documentRepository
+            LawyerCredentialDocumentRepository documentRepository,
+            AccountMailService mailService
     ) {
         this.lawyerRepository = lawyerRepository;
         this.documentRepository = documentRepository;
+        this.mailService = mailService;
     }
 
     public record DocumentSummary(Long id, String fileName, String contentType) {
@@ -92,6 +96,10 @@ public class LawyerAdminController {
         Lawyer lawyer = findLawyer(id);
         lawyer.approve();
         lawyerRepository.save(lawyer);
+        mailService.send(lawyer.getEmail(), "변호사 가입이 승인되었습니다",
+                lawyer.getName() + " 변호사님, 제출하신 자격 서류 확인이 끝나 가입이 승인되었습니다.\n\n"
+                        + "이제 변호사 로그인 후 회원 문의에 답변하실 수 있습니다.\n"
+                        + "설정 화면에서 강점·수임료·실적을 입력하시면 회원이 변호사를 고를 때 참고합니다.");
     }
 
     @PostMapping("/{id}/reject")
@@ -102,6 +110,11 @@ public class LawyerAdminController {
         Lawyer lawyer = findLawyer(id);
         lawyer.reject(request != null ? request.reason() : null);
         lawyerRepository.save(lawyer);
+        String reason = lawyer.getRejectionReason();
+        mailService.send(lawyer.getEmail(), "변호사 가입 신청 결과 안내",
+                lawyer.getName() + " 변호사님, 아쉽게도 이번 가입 신청은 승인되지 않았습니다.\n\n"
+                        + (reason != null && !reason.isBlank() ? "사유: " + reason + "\n\n" : "")
+                        + "서류를 보완해 다시 신청하시거나, 문의가 있으면 회신해주세요.");
     }
 
     private Lawyer findLawyer(Long id) {

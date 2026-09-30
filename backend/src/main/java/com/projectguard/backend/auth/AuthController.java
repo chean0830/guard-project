@@ -36,7 +36,7 @@ public class AuthController {
     public record AuthResponse(String token, String email) {
     }
 
-    public record OAuthSyncRequest(String provider, String providerId, String email) {
+    public record OAuthSyncRequest(String provider, String providerId, String email, Boolean emailVerified) {
     }
 
     @PostMapping("/signup")
@@ -65,7 +65,8 @@ public class AuthController {
         if (internalSyncSecret.isBlank() || !internalSyncSecret.equals(providedSecret)) {
             throw new InvalidCredentialsException("내부 전용 엔드포인트입니다.");
         }
-        AuthResult result = authService.oauthLogin(request.provider(), request.providerId(), request.email());
+        AuthResult result = authService.oauthLogin(
+                request.provider(), request.providerId(), request.email(), Boolean.TRUE.equals(request.emailVerified()));
         return new AuthResponse(result.token(), result.email());
     }
 
@@ -91,6 +92,12 @@ public class AuthController {
     @ExceptionHandler(EmailAlreadyExistsException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public String handleEmailExists(EmailAlreadyExistsException e) {
+        return e.getMessage();
+    }
+
+    @ExceptionHandler(LoginLockedException.class)
+    @ResponseStatus(HttpStatus.LOCKED)
+    public String handleLocked(LoginLockedException e) {
         return e.getMessage();
     }
 

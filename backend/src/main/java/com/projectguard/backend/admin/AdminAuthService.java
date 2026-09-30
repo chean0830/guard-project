@@ -21,7 +21,13 @@ public class AdminAuthService {
     // 관리자 권한은 회원/변호사보다 훨씬 강하므로 세션을 짧게 둔다.
     private static final Duration TOKEN_TTL = Duration.ofHours(12);
 
+    private static final int MAX_FAILED_ATTEMPTS = 5;
+    private static final Duration LOCK_DURATION = Duration.ofMinutes(15);
+
     private final AdminAuthTokenRepository tokenRepository;
+    // 관리자는 계정 테이블이 없고 이메일 재설정도 없어서, 5회 실패하면 15분 동안 잠근다(서버 메모리).
+    private int failedAttempts = 0;
+    private Instant lockedUntil = Instant.EPOCH;
     private final String adminEmail;
     private final String adminPassword;
 
@@ -35,13 +41,21 @@ public class AdminAuthService {
         this.adminPassword = adminPassword;
     }
 
-    public String login(String email, String password) {
+    public synchronized String login(String email, String password) {
+        if (lockedUntil.isAfter(Instant.now())) {
+            throw new InvalidCredentialsException("관리자 로그인을 " + MAX_FAILED_ATTEMPTS + "회 틀려 15분 동안 잠겼습니다. 잠시 후 다시 시도해주세요.");
+        }
         if (adminEmail.isBlank() || adminPassword.isBlank()
                 || email == null || password == null
                 || !adminEmail.equalsIgnoreCase(email.trim())
                 || !constantTimeEquals(adminPassword, password)) {
+            if (++failedAttempts >= MAX_FAILED_ATTEMPTS) {
+                failedAttempts = 0;
+                lockedUntil = Instant.now().plus(LOCK_DURATION);
+            }
             throw new InvalidCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다.");
         }
+        failedAttempts = 0;
         String token = UUID.randomUUID().toString();
         tokenRepository.save(new AdminAuthToken(token, Instant.now().plus(TOKEN_TTL)));
         return token;

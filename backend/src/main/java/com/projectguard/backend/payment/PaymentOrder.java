@@ -48,6 +48,19 @@ public class PaymentOrder {
     /** 이 이용권으로 시작한 상담. null이면 아직 쓰지 않은 이용권이다. */
     private Long consultationId;
 
+    /** 사용한 이용권의 환불 요청 사유(회원 작성). */
+    @Column(length = 500)
+    private String refundReason;
+
+    private Instant refundRequestedAt;
+
+    /** 관리자가 환불을 거절한 사유. 거절되면 상태는 다시 PAID로 돌아간다. */
+    @Column(length = 500)
+    private String refundRejectedReason;
+
+    /** 결제 취소 또는 환불이 끝난 시각. */
+    private Instant canceledAt;
+
     protected PaymentOrder() {
     }
 
@@ -65,6 +78,44 @@ public class PaymentOrder {
 
     public void markFailed() {
         this.status = PaymentStatus.FAILED;
+    }
+
+    public void markCanceled() {
+        this.status = PaymentStatus.CANCELED;
+        this.canceledAt = Instant.now();
+    }
+
+    public void requestRefund(String reason) {
+        this.status = PaymentStatus.REFUND_REQUESTED;
+        this.refundReason = reason;
+        this.refundRequestedAt = Instant.now();
+        this.refundRejectedReason = null;
+    }
+
+    public void markRefunded() {
+        this.status = PaymentStatus.REFUNDED;
+        this.canceledAt = Instant.now();
+    }
+
+    public void rejectRefund(String reason) {
+        this.status = PaymentStatus.PAID;
+        this.refundRejectedReason = reason;
+    }
+
+    public String getRefundReason() {
+        return refundReason;
+    }
+
+    public Instant getRefundRequestedAt() {
+        return refundRequestedAt;
+    }
+
+    public String getRefundRejectedReason() {
+        return refundRejectedReason;
+    }
+
+    public Instant getCanceledAt() {
+        return canceledAt;
     }
 
     public void useFor(Long consultationId) {

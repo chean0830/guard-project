@@ -3,6 +3,7 @@ package com.projectguard.backend.lawyer;
 import com.projectguard.backend.auth.AccountBlockedException;
 import com.projectguard.backend.auth.EmailAlreadyExistsException;
 import com.projectguard.backend.auth.InvalidCredentialsException;
+import com.projectguard.backend.auth.LoginLockedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -94,6 +95,12 @@ public class LawyerAuthController {
     @ExceptionHandler(InvalidCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public String handleInvalidCredentials(InvalidCredentialsException e) {
+        return e.getMessage();
+    }
+
+    @ExceptionHandler(LoginLockedException.class)
+    @ResponseStatus(HttpStatus.LOCKED)
+    public String handleLocked(LoginLockedException e) {
         return e.getMessage();
     }
 

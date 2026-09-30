@@ -8,12 +8,14 @@ import com.projectguard.backend.consultation.ConsultationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -48,6 +50,16 @@ public class PaymentController {
     ) {
     }
 
+    /** 결제 내역 한 줄. usable: 아직 쓰지 않아 바로 취소 가능한 이용권인지. */
+    public record PaymentHistoryItem(
+            String orderId, String orderName, long amount, String status, Instant paidAt, Instant canceledAt,
+            Long consultationId, String refundReason, String refundRejectedReason
+    ) {
+    }
+
+    public record RefundRequest(String reason) {
+    }
+
     public record DirectConsultationRequest(Long lawyerId, String message) {
     }
 
@@ -78,6 +90,35 @@ public class PaymentController {
         return new CreditsResponse(
                 paymentService.availableCredits(requireUser(authorization).getId()),
                 PaymentService.LAWYER_SELECTION_PRICE
+        );
+    }
+
+    @GetMapping("/api/payments/history")
+    public List<PaymentHistoryItem> history(@RequestHeader(value = "Authorization", required = false) String authorization) {
+        return paymentService.history(requireUser(authorization).getId()).stream().map(PaymentController::toHistoryItem).toList();
+    }
+
+    @PostMapping("/api/payments/{orderId}/cancel")
+    public PaymentHistoryItem cancel(
+            @PathVariable String orderId,
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        return toHistoryItem(paymentService.cancelUnused(requireUser(authorization).getId(), orderId));
+    }
+
+    @PostMapping("/api/payments/{orderId}/refund-request")
+    public PaymentHistoryItem requestRefund(
+            @PathVariable String orderId,
+            @RequestBody RefundRequest request,
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        return toHistoryItem(paymentService.requestRefund(requireUser(authorization).getId(), orderId, request.reason()));
+    }
+
+    static PaymentHistoryItem toHistoryItem(PaymentOrder o) {
+        return new PaymentHistoryItem(
+                o.getOrderId(), PaymentService.ORDER_NAME, o.getAmount(), o.getStatus().name(), o.getPaidAt(), o.getCanceledAt(),
+                o.getConsultationId(), o.getRefundReason(), o.getRefundRejectedReason()
         );
     }
 

@@ -3,6 +3,7 @@ package com.projectguard.backend.lawyer;
 import com.projectguard.backend.auth.AccountBlockedException;
 import com.projectguard.backend.auth.EmailAlreadyExistsException;
 import com.projectguard.backend.auth.InvalidCredentialsException;
+import com.projectguard.backend.auth.LoginLockedException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -76,9 +77,24 @@ public class LawyerAuthService {
     }
 
     public LawyerAuthResult login(String email, String password) {
+        String wrong = "이메일 또는 비밀번호가 올바르지 않습니다. (" + LoginLockedException.MAX_FAILED_ATTEMPTS + "회 틀리면 로그인이 잠겨요)";
         Lawyer lawyer = lawyerRepository.findByEmail(email)
-                .filter(l -> passwordEncoder.matches(password, l.getPasswordHash()))
-                .orElseThrow(() -> new InvalidCredentialsException("이메일 또는 비밀번호가 올바르지 않습니다."));
+                .orElseThrow(() -> new InvalidCredentialsException(wrong));
+        if (lawyer.isLoginLocked()) {
+            throw new LoginLockedException();
+        }
+        if (!passwordEncoder.matches(password, lawyer.getPasswordHash())) {
+            boolean locked = lawyer.recordLoginFailure(LoginLockedException.MAX_FAILED_ATTEMPTS);
+            lawyerRepository.save(lawyer);
+            if (locked) {
+                throw new LoginLockedException();
+            }
+            throw new InvalidCredentialsException(wrong);
+        }
+        if (lawyer.getFailedLoginCount() > 0) {
+            lawyer.resetLoginFailures();
+            lawyerRepository.save(lawyer);
+        }
 
         switch (lawyer.getStatus()) {
             case PENDING -> throw new LawyerNotApprovedException(
@@ -140,6 +156,19 @@ public class LawyerAuthService {
 
     private String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /** 비밀번호 찾기로 새 비밀번호를 정한다. 로그인 잠금을 풀고, 기존 세션은 모두 끊는다. */
+    public void resetPassword(Long lawyerId, String newPassword) {
+        if (newPassword == null || newPassword.length() < MIN_PASSWORD_LENGTH) {
+            throw new IllegalArgumentException("새 비밀번호는 " + MIN_PASSWORD_LENGTH + "자 이상이어야 합니다.");
+        }
+        Lawyer lawyer = lawyerRepository.findById(lawyerId)
+                .orElseThrow(() -> new IllegalArgumentException("계정을 찾을 수 없습니다."));
+        lawyer.changePasswordHash(passwordEncoder.encode(newPassword));
+        lawyer.resetLoginFailures();
+        lawyerRepository.save(lawyer);
+        tokenRepository.deleteByLawyerId(lawyerId);
     }
 
     public void updateEmailNotificationsEnabled(Long lawyerId, boolean enabled) {

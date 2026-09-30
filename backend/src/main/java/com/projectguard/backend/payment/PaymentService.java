@@ -77,6 +77,76 @@ public class PaymentService {
         return orderRepository.countByUserIdAndStatusAndConsultationIdIsNull(userId, PaymentStatus.PAID);
     }
 
+    /** 회원 본인의 결제 내역 (결제창만 열고 끝난 주문은 제외). */
+    public List<PaymentOrder> history(Long userId) {
+        return orderRepository.findByUserIdAndStatusNotOrderByCreatedAtDesc(userId, PaymentStatus.READY);
+    }
+
+    /** 아직 쓰지 않은 이용권은 회원이 바로 결제 취소할 수 있다(관리자 승인 불필요). */
+    @Transactional
+    public PaymentOrder cancelUnused(Long userId, String orderId) {
+        PaymentOrder order = lockOwnOrder(userId, orderId);
+        if (order.getStatus() != PaymentStatus.PAID || order.getConsultationId() != null) {
+            throw new PaymentException("사용하지 않은 이용권만 바로 취소할 수 있어요. 이미 사용했다면 환불 요청을 해주세요.");
+        }
+        tossPaymentsClient.cancel(order.getPaymentKey(), order.getOrderId(), "미사용 이용권 결제 취소 (회원 요청)");
+        order.markCanceled();
+        return orderRepository.save(order);
+    }
+
+    /** 이미 상담에 쓴 이용권은 환불 요청만 할 수 있고, 관리자가 승인해야 실제로 환불된다. */
+    @Transactional
+    public PaymentOrder requestRefund(Long userId, String orderId, String reason) {
+        if (reason == null || reason.isBlank()) {
+            throw new PaymentException("환불 사유를 입력해주세요.");
+        }
+        if (reason.length() > 500) {
+            throw new PaymentException("환불 사유는 500자 이내로 입력해주세요.");
+        }
+        PaymentOrder order = lockOwnOrder(userId, orderId);
+        if (order.getStatus() != PaymentStatus.PAID || order.getConsultationId() == null) {
+            throw new PaymentException("사용한 이용권만 환불 요청할 수 있어요. 사용하지 않았다면 바로 결제 취소할 수 있어요.");
+        }
+        order.requestRefund(reason.trim());
+        return orderRepository.save(order);
+    }
+
+    /** 관리자 결제 관리 목록. status가 없으면 결제창만 열고 끝난 주문을 뺀 전체. */
+    public List<PaymentOrder> listForAdmin(PaymentStatus status) {
+        return status != null
+                ? orderRepository.findByStatusOrderByCreatedAtDesc(status)
+                : orderRepository.findByStatusNotOrderByCreatedAtDesc(PaymentStatus.READY);
+    }
+
+    @Transactional
+    public PaymentOrder approveRefund(String orderId) {
+        PaymentOrder order = orderRepository.findByOrderIdForUpdate(orderId)
+                .orElseThrow(() -> new PaymentException("주문 정보를 찾을 수 없습니다."));
+        if (order.getStatus() != PaymentStatus.REFUND_REQUESTED) {
+            throw new PaymentException("환불 요청 상태인 결제만 승인할 수 있습니다.");
+        }
+        tossPaymentsClient.cancel(order.getPaymentKey(), order.getOrderId(), "관리자 환불 승인: " + order.getRefundReason());
+        order.markRefunded();
+        return orderRepository.save(order);
+    }
+
+    @Transactional
+    public PaymentOrder rejectRefund(String orderId, String reason) {
+        PaymentOrder order = orderRepository.findByOrderIdForUpdate(orderId)
+                .orElseThrow(() -> new PaymentException("주문 정보를 찾을 수 없습니다."));
+        if (order.getStatus() != PaymentStatus.REFUND_REQUESTED) {
+            throw new PaymentException("환불 요청 상태인 결제만 거절할 수 있습니다.");
+        }
+        order.rejectRefund(reason == null || reason.isBlank() ? null : reason.trim());
+        return orderRepository.save(order);
+    }
+
+    private PaymentOrder lockOwnOrder(Long userId, String orderId) {
+        return orderRepository.findByOrderIdForUpdate(orderId)
+                .filter(o -> o.getUserId().equals(userId))
+                .orElseThrow(() -> new PaymentException("주문 정보를 찾을 수 없습니다."));
+    }
+
     /** 이용권 1장을 써서 회원이 고른 변호사와 상담을 시작한다. 이용권 차감과 상담 생성은 함께 성공하거나 함께 취소된다. */
     @Transactional
     public Consultation startDirectConsultation(Long userId, Long lawyerId, String message) {

@@ -35,6 +35,9 @@ class LawyerAdminControllerTest {
     @MockitoBean
     private LawyerCredentialDocumentRepository documentRepository;
 
+    @MockitoBean
+    private com.projectguard.backend.common.AccountMailService mailService;
+
     @Test
     void 비밀키가_없으면_목록조회는_401을_반환한다() throws Exception {
         mockMvc.perform(get("/api/admin/lawyers"))
