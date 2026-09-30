@@ -18,6 +18,7 @@ test('회원이 대화방에서 변호사를 차단하면 양쪽 입력창이 �
 }) => {
   const suffix = `${Date.now()}-${Math.floor(Math.random() * 100000)}`
   const userSignup = await request.post(`${BACKEND_URL}/api/auth/signup`, {
+    headers: { 'X-Internal-Secret': readBackendEnv('INTERNAL_SYNC_SECRET') },
     data: { email: `e2e-block-user-${suffix}@example.com`, password: 'password123' },
   })
   const { token: userToken } = (await userSignup.json()) as { token: string }

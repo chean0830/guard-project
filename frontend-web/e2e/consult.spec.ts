@@ -76,6 +76,7 @@ test.describe('실제 변호사 상담 문의', () => {
     // 회원 계정 준비
     const userEmail = uniqueEmail('e2e-user')
     const userSignupResponse = await request.post(`${BACKEND_URL}/api/auth/signup`, {
+      headers: { 'X-Internal-Secret': readBackendEnv('INTERNAL_SYNC_SECRET') },
       data: { email: userEmail, password: 'password123' },
     })
     const { token: userToken } = (await userSignupResponse.json()) as { token: string }

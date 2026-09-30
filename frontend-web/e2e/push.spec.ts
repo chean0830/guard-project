@@ -21,6 +21,7 @@ test('문의를 등록하면 접수 팝업이 뜨고, 대화 보기로 스레드
 
   const userEmail = uniqueEmail('e2e-push-user')
   const signupResponse = await page.request.post(`${BACKEND_URL}/api/auth/signup`, {
+    headers: { 'X-Internal-Secret': readBackendEnv('INTERNAL_SYNC_SECRET') },
     data: { email: userEmail, password: 'password123' },
   })
   const { token } = (await signupResponse.json()) as { token: string }

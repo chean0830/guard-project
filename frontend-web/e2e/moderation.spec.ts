@@ -47,6 +47,7 @@ test.describe('상담 신고 및 관리자 정지 처리', () => {
   test('대화방에 들어오면 이용 안내가 뜨고, 일주일 동안 안 보기를 누르면 다시 뜨지 않는다', async ({ page, request }) => {
     const suffix = uniqueSuffix()
     const userSignup = await request.post(`${BACKEND_URL}/api/auth/signup`, {
+      headers: { 'X-Internal-Secret': readBackendEnv('INTERNAL_SYNC_SECRET') },
       data: { email: `e2e-notice-user-${suffix}@example.com`, password: 'password123' },
     })
     const { token } = (await userSignup.json()) as { token: string }
@@ -109,6 +110,7 @@ test.describe('상담 신고 및 관리자 정지 처리', () => {
     await request.post(`${BACKEND_URL}/api/admin/lawyers/${created.id}/approve`, { headers: admin })
 
     const userSignup = await request.post(`${BACKEND_URL}/api/auth/signup`, {
+      headers: { 'X-Internal-Secret': readBackendEnv('INTERNAL_SYNC_SECRET') },
       data: { email: `e2e-mod-user-${suffix}@example.com`, password: 'password123' },
     })
     const { token: userToken } = (await userSignup.json()) as { token: string }

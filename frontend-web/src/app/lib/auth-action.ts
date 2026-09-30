@@ -15,13 +15,13 @@ function safeRedirectPath(path: string): string {
   return path.startsWith('/') && !path.startsWith('//') && !path.startsWith('/\\') ? path : '/'
 }
 
-async function callAuthEndpoint(path: string, email: string, password: string) {
+async function callAuthEndpoint(path: string, email: string, password: string, extra: Record<string, string> = {}) {
   let response: Response
   try {
     response = await fetch(`${BACKEND_URL}/api/auth/${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, ...extra }),
     })
   } catch {
     return { ok: false as const, message: '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.' }
@@ -61,7 +61,8 @@ export async function signupAction(
   const email = String(formData.get('email') ?? '')
   const password = String(formData.get('password') ?? '')
 
-  const result = await callAuthEndpoint('signup', email, password)
+  const verificationToken = String(formData.get('verificationToken') ?? '')
+  const result = await callAuthEndpoint('signup', email, password, { verificationToken })
   if (!result.ok) {
     return { status: 'error', message: result.message }
   }
@@ -114,4 +115,38 @@ export async function logoutAction() {
 export async function getSessionEmail(): Promise<string | null> {
   const cookieStore = await cookies()
   return cookieStore.get(SESSION_EMAIL_COOKIE)?.value ?? null
+}
+
+export type CodeResult = { ok: true } | { ok: false; message: string }
+
+async function postJson(path: string, body: unknown): Promise<Response | null> {
+  try {
+    return await fetch(`${BACKEND_URL}/api/auth/${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    return null
+  }
+}
+
+/** 회원가입 1단계: 이메일로 6자리 인증번호를 보낸다. */
+export async function requestSignupCodeAction(email: string): Promise<CodeResult> {
+  const response = await postJson('signup/code', { email })
+  if (!response) return { ok: false, message: '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.' }
+  if (!response.ok) return { ok: false, message: (await response.text()) || '인증번호를 보내지 못했습니다.' }
+  return { ok: true }
+}
+
+/** 회원가입 2단계: 인증번호를 확인하고 가입용 1회용 토큰을 받는다. */
+export async function verifySignupCodeAction(
+  email: string,
+  code: string,
+): Promise<{ ok: true; token: string } | { ok: false; message: string }> {
+  const response = await postJson('signup/verify', { email, code })
+  if (!response) return { ok: false, message: '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.' }
+  if (!response.ok) return { ok: false, message: (await response.text()) || '인증에 실패했습니다.' }
+  const data = (await response.json()) as { verificationToken: string }
+  return { ok: true, token: data.verificationToken }
 }
