@@ -20,13 +20,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final EmailVerificationService emailVerificationService;
     private final String internalSyncSecret;
 
     public AuthController(
             AuthService authService,
+            EmailVerificationService emailVerificationService,
             @Value("${INTERNAL_SYNC_SECRET:}") String internalSyncSecret
     ) {
         this.authService = authService;
+        this.emailVerificationService = emailVerificationService;
         this.internalSyncSecret = internalSyncSecret;
     }
 
@@ -39,8 +42,40 @@ public class AuthController {
     public record OAuthSyncRequest(String provider, String providerId, String email, Boolean emailVerified) {
     }
 
+    public record SignupRequest(String email, String password, String verificationToken) {
+    }
+
+    public record EmailCodeRequest(String email, String code) {
+    }
+
+    public record VerificationResponse(String verificationToken) {
+    }
+
+    /** 1단계: 가입할 이메일로 6자리 인증번호를 보낸다. */
+    @PostMapping("/signup/code")
+    public void requestSignupCode(@RequestBody EmailCodeRequest request) {
+        emailVerificationService.requestCode(request.email());
+    }
+
+    /** 2단계: 인증번호를 확인하고 가입용 1회용 토큰을 준다. */
+    @PostMapping("/signup/verify")
+    public VerificationResponse verifySignupCode(@RequestBody EmailCodeRequest request) {
+        return new VerificationResponse(emailVerificationService.confirmCode(request.email(), request.code()));
+    }
+
+    /**
+     * 3단계: 이메일 인증을 마친 경우에만 가입된다. 단, 내부 비밀값(INTERNAL_SYNC_SECRET)을 가진 서버 간 호출
+     * (e2e 테스트 준비 등)은 인증을 건너뛴다 — 이 비밀값은 이미 oauth-sync로 계정을 만들 수 있는 권한이라 새로 열리는 권한은 없다.
+     */
     @PostMapping("/signup")
-    public AuthResponse signup(@RequestBody AuthRequest request) {
+    public AuthResponse signup(
+            @RequestBody SignupRequest request,
+            @RequestHeader(value = "X-Internal-Secret", required = false) String providedSecret
+    ) {
+        boolean internal = !internalSyncSecret.isBlank() && internalSyncSecret.equals(providedSecret);
+        if (!internal) {
+            emailVerificationService.consumeToken(request.email(), request.verificationToken());
+        }
         AuthResult result = authService.signup(request.email(), request.password());
         return new AuthResponse(result.token(), result.email());
     }
@@ -110,6 +145,12 @@ public class AuthController {
     @ExceptionHandler(InvalidCredentialsException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public String handleInvalidCredentials(InvalidCredentialsException e) {
+        return e.getMessage();
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public String handleTooMany(IllegalStateException e) {
         return e.getMessage();
     }
 

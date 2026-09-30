@@ -31,6 +31,9 @@ class AuthControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
+    private EmailVerificationService emailVerificationService;
+
+    @MockitoBean
     private AuthService authService;
 
     @Test
