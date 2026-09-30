@@ -93,10 +93,13 @@ export async function dismissReportAction(reportId: number) {
   return adminFetch<null>(`/reports/${reportId}/dismiss`, { method: 'POST' })
 }
 
-export async function fetchMembersAction(type: PartyType) {
+export type MemberPage<T> = { items: T[]; page: number; totalPages: number; totalElements: number }
+
+export async function fetchMembersAction(type: PartyType, page = 0, q = '') {
+  const query = `?page=${page}${q ? `&q=${encodeURIComponent(q)}` : ''}`
   return type === 'USER'
-    ? adminFetch<AdminUserMember[]>('/members/users')
-    : adminFetch<AdminLawyerMember[]>('/members/lawyers')
+    ? adminFetch<MemberPage<AdminUserMember>>(`/members/users${query}`)
+    : adminFetch<MemberPage<AdminLawyerMember>>(`/members/lawyers${query}`)
 }
 
 export async function setMemberBlockedAction(type: PartyType, id: number, blocked: boolean, reason?: string) {
@@ -109,6 +112,8 @@ export async function setMemberBlockedAction(type: PartyType, id: number, blocke
 export type AdminPayment = {
   payment: {
     orderId: string
+    productType: 'LAWYER_SELECTION' | 'ANALYSIS'
+    used: boolean
     orderName: string
     amount: number
     status: 'PAID' | 'FAILED' | 'CANCELED' | 'REFUND_REQUESTED' | 'REFUNDED'

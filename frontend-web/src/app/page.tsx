@@ -81,9 +81,15 @@ const STEPS = [
   },
 ]
 
-export default async function Home() {
+export default async function Home({ searchParams }: { searchParams: Promise<{ analysisPaid?: string; paymentFailed?: string; withdrawn?: string }> }) {
+  const notice = await searchParams
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-zinc-950">
+      {notice.withdrawn === '1' && (
+        <p className="bg-zinc-100 px-4 py-3 text-center text-sm text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+          탈퇴가 완료됐어요. 그동안 이용해주셔서 감사합니다.
+        </p>
+      )}
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-b from-orange-50 to-white px-4 pt-8 pb-24 text-center dark:from-zinc-900 dark:to-zinc-950 sm:px-8">
         <p className="mx-auto mb-4 inline-block rounded-full bg-orange-100 px-4 py-1.5 text-sm font-semibold text-orange-700 dark:bg-orange-500/10 dark:text-orange-400">
@@ -237,7 +243,20 @@ export default async function Home() {
           <p className="mt-2 text-center text-sm text-zinc-500 dark:text-zinc-400">
             업로드한 파일은 분석 후 즉시 삭제되며 서버에 저장되지 않습니다.
           </p>
+          <p className="mt-1 text-center text-xs text-zinc-400">
+            로그인하면 아이디당 5회까지 무료로 분석할 수 있고, 이후에는 1회 990원이에요.
+          </p>
           <div className="mt-8 w-full rounded-3xl border border-zinc-200 bg-white p-6 shadow-xl shadow-zinc-200/50 sm:p-8 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none">
+            {notice.analysisPaid === '1' && (
+              <p className="mb-6 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+                결제가 완료됐어요. 분석 이용권 1장이 생겼으니 파일을 다시 올려 분석해주세요.
+              </p>
+            )}
+            {notice.paymentFailed === '1' && (
+              <p className="mb-6 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+                결제가 완료되지 않았어요. 다시 시도해주세요.
+              </p>
+            )}
             <AnalyzeForm />
           </div>
         </div>

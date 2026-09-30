@@ -112,7 +112,7 @@ export function LawyerSignupForm() {
             id={fileInputId}
             type="file"
             multiple
-            accept="application/pdf,image/*"
+            accept=".pdf,.jpg,.jpeg,application/pdf,image/jpeg"
             onChange={(e) => addFiles(e.target.files)}
             className="hidden"
           />

@@ -28,13 +28,14 @@ test('회원이 대화방에서 변호사를 차단하면 양쪽 입력창이 �
     headers: { Authorization: `Bearer ${userToken}` },
     data: { message: '차단 테스트 문의' },
   })
-  const { id, lawyerName } = (await started.json()) as { id: number; lawyerName: string }
+  const { id, lawyerId, lawyerName } = (await started.json()) as { id: number; lawyerId: number; lawyerName: string }
   const lawyers = (await (
     await request.get(`${BACKEND_URL}/api/admin/lawyers?status=APPROVED`, {
       headers: { 'X-Admin-Secret': readBackendEnv('ADMIN_SECRET') },
     })
-  ).json()) as Array<{ email: string; name: string }>
-  const matched = lawyers.find((l) => l.name === lawyerName)!
+  ).json()) as Array<{ id: number; email: string; name: string }>
+  // 같은 이름의 변호사가 여럿일 수 있어 이름이 아니라 ID로 찾는다.
+  const matched = lawyers.find((l) => l.id === lawyerId)!
   const isSeeded = matched.email === readBackendEnv('SEED_LAWYER_EMAIL') || /^demo-lawyer-\d+@example\.com$/.test(matched.email)
   const lawyerLogin = await request.post(`${BACKEND_URL}/api/lawyer/auth/login`, {
     data: { email: matched.email, password: isSeeded ? readBackendEnv('SEED_LAWYER_PASSWORD') : 'password123' },

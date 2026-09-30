@@ -1,10 +1,11 @@
 'use server'
 
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 
 const BACKEND_URL = process.env.BACKEND_API_URL ?? 'http://localhost:8080'
 
-export type Profile = { email: string; name: string | null; provider: string }
+export type Profile = { email: string; name: string | null; provider: string; hasPassword: boolean }
 
 export type ProfileFormState = { status: 'idle' } | { status: 'error'; message: string } | { status: 'success' }
 
@@ -74,4 +75,25 @@ export async function changePasswordAction(
     return { status: 'error', message: text || '비밀번호 변경에 실패했습니다.' }
   }
   return { status: 'success' }
+}
+
+/** 회원 탈퇴. 성공하면 로그인 쿠키를 지우고 메인으로 보낸다. */
+export async function withdrawAction(body: { password?: string; confirmText?: string }): Promise<{ ok: false; message: string } | void> {
+  let response: Response
+  try {
+    response = await fetch(`${BACKEND_URL}/api/profile`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
+      body: JSON.stringify(body),
+    })
+  } catch {
+    return { ok: false, message: '서버에 연결할 수 없습니다.' }
+  }
+  if (!response.ok) {
+    return { ok: false, message: (await response.text()) || '탈퇴에 실패했습니다.' }
+  }
+  const cookieStore = await cookies()
+  cookieStore.delete('session')
+  cookieStore.delete('session_email')
+  redirect('/?withdrawn=1')
 }

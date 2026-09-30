@@ -84,8 +84,8 @@ export function PaymentHistory({ initialItems }: { initialItems: PaymentHistoryI
       ) : (
         <ul className="mt-6 flex flex-col gap-3">
           {items.map((item) => {
-            const unused = item.status === 'PAID' && item.consultationId === null
-            const used = item.status === 'PAID' && item.consultationId !== null
+            const unused = item.status === 'PAID' && !item.used
+            const used = item.status === 'PAID' && item.used
             return (
               <li key={item.orderId} className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -103,6 +103,8 @@ export function PaymentHistory({ initialItems }: { initialItems: PaymentHistoryI
                     <Link href={`/consult/${item.consultationId}`} className="text-orange-600 hover:underline dark:text-orange-400">
                       사용한 상담 보기
                     </Link>
+                  ) : item.productType === 'ANALYSIS' ? (
+                    item.used ? '분석에 사용함' : '미사용 · 등기부 분석에서 자동으로 쓰여요'
                   ) : item.status === 'PAID' ? (
                     <Link href="/consult/choose" className="text-orange-600 hover:underline dark:text-orange-400">
                       미사용 · 변호사 고르러 가기

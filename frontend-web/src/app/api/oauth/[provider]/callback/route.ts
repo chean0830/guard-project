@@ -71,12 +71,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
     const response = NextResponse.redirect(new URL(redirectTo, request.url))
     response.cookies.set('session', token, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24 * 7,
     })
     response.cookies.set('session_email', email, {
       httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24 * 7,

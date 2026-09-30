@@ -40,6 +40,7 @@ async function setSessionCookies(token: string, email: string) {
   const cookieStore = await cookies()
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7, // 7일 — 백엔드 토큰 만료 기간과 맞춤

@@ -35,6 +35,11 @@ export async function GET(request: NextRequest) {
       chooseUrl.searchParams.set('paymentError', (await response.text()) || '결제 승인에 실패했습니다.')
       return NextResponse.redirect(chooseUrl)
     }
+    const { productType } = (await response.json()) as { productType: string }
+    if (productType === 'ANALYSIS') {
+      // 분석 이용권은 분석 화면으로 돌려보낸다 — 다시 분석하면 이용권 1장이 쓰인다.
+      return NextResponse.redirect(new URL('/?analysisPaid=1#analyze', request.url))
+    }
   } catch {
     chooseUrl.searchParams.set('paymentError', '결제 승인 중 서버에 연결할 수 없습니다.')
     return NextResponse.redirect(chooseUrl)

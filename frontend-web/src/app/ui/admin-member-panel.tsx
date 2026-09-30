@@ -49,22 +49,28 @@ export function AdminMemberPanel({ onUnauthorized }: { onUnauthorized: () => voi
   const [type, setType] = useState<PartyType>('USER')
   const [members, setMembers] = useState<Member[]>([])
   const [query, setQuery] = useState('')
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [blockingId, setBlockingId] = useState<number | null>(null)
   const [blockReason, setBlockReason] = useState('')
 
-  async function load(nextType: PartyType) {
+  async function load(nextType: PartyType, nextPage = 0, q = query) {
     setLoading(true)
     setError(null)
-    const result = await fetchMembersAction(nextType)
+    const result = await fetchMembersAction(nextType, nextPage, q.trim())
     setLoading(false)
     if (!result.ok) {
       setError(result.message)
       if (result.message.includes('관리자 로그인')) onUnauthorized()
       return
     }
-    setMembers(toMembers(nextType, result.data))
+    setMembers(toMembers(nextType, result.data.items))
+    setPage(result.data.page)
+    setTotalPages(result.data.totalPages)
+    setTotal(result.data.totalElements)
   }
 
   useEffect(() => {
@@ -76,7 +82,8 @@ export function AdminMemberPanel({ onUnauthorized }: { onUnauthorized: () => voi
   async function handleTypeChange(nextType: PartyType) {
     setType(nextType)
     setBlockingId(null)
-    await load(nextType)
+    setQuery('')
+    await load(nextType, 0, '')
   }
 
   async function handleBlock(id: number) {
@@ -87,7 +94,7 @@ export function AdminMemberPanel({ onUnauthorized }: { onUnauthorized: () => voi
       setError(result.message)
       return
     }
-    await load(type)
+    await load(type, page)
   }
 
   async function handleUnblock(member: Member) {
@@ -97,13 +104,10 @@ export function AdminMemberPanel({ onUnauthorized }: { onUnauthorized: () => voi
       setError(result.message)
       return
     }
-    await load(type)
+    await load(type, page)
   }
 
-  const keyword = query.trim().toLowerCase()
-  const visible = keyword
-    ? members.filter((m) => m.email.toLowerCase().includes(keyword) || (m.name ?? '').toLowerCase().includes(keyword))
-    : members
+  const visible = members
 
   return (
     <div>
@@ -125,7 +129,10 @@ export function AdminMemberPanel({ onUnauthorized }: { onUnauthorized: () => voi
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="이메일·이름 검색"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') load(type, 0, query)
+          }}
+          placeholder="이메일·이름 검색 후 Enter"
           className="min-w-0 flex-1 rounded-full border border-zinc-300 bg-transparent px-4 py-2 text-sm outline-none focus:border-orange-400 dark:border-zinc-700"
         />
       </div>
@@ -199,6 +206,28 @@ export function AdminMemberPanel({ onUnauthorized }: { onUnauthorized: () => voi
           </li>
         ))}
       </ul>
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-center gap-3 text-sm">
+          <button
+            onClick={() => load(type, page - 1)}
+            disabled={page === 0 || loading}
+            className="rounded-full border border-zinc-300 px-3 py-1 disabled:opacity-40 dark:border-zinc-700"
+          >
+            이전
+          </button>
+          <span className="text-zinc-500">
+            {page + 1} / {totalPages} 페이지 · 총 {total}명
+          </span>
+          <button
+            onClick={() => load(type, page + 1)}
+            disabled={page + 1 >= totalPages || loading}
+            className="rounded-full border border-zinc-300 px-3 py-1 disabled:opacity-40 dark:border-zinc-700"
+          >
+            다음
+          </button>
+        </div>
+      )}
     </div>
   )
 }

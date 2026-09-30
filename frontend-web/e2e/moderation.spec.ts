@@ -101,7 +101,7 @@ test.describe('상담 신고 및 관리자 정지 처리', () => {
         password: 'password123',
         name: `E2E신고변호사-${suffix}`,
         barNumber: '00000',
-        documents: { name: 'license.pdf', mimeType: 'application/pdf', buffer: Buffer.from('dummy') },
+        documents: { name: 'license.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 dummy license') },
       },
     })
     const pending = (await (await request.get(`${BACKEND_URL}/api/admin/lawyers?status=PENDING`, { headers: admin })).json()) as Array<{ id: number; email: string }>
@@ -118,7 +118,7 @@ test.describe('상담 신고 및 관리자 정지 처리', () => {
       headers: userAuth,
       data: { message: '전세 보증금 반환 문의드립니다' },
     })
-    const { id: consultationId, lawyerName } = (await started.json()) as { id: number; lawyerName: string }
+    const { id: consultationId, lawyerId, lawyerName } = (await started.json()) as { id: number; lawyerId: number; lawyerName: string }
 
     // 회원이 대화방에서 신고 — 기준(욕설·모욕/금전 요구) 중 하나를 골라야만 접수 버튼이 활성화된다
     await page.context().addCookies([{ name: 'session', value: userToken, domain: 'localhost', path: '/', httpOnly: true }])
@@ -148,8 +148,9 @@ test.describe('상담 신고 및 관리자 정지 처리', () => {
     await expect(page.locator('li', { hasText: detail })).toHaveCount(0)
 
     // 정지된 변호사는 로그인할 수 없고, 회원 쪽 대화방은 입력창 대신 안내 문구를 보여준다
-    const approved = (await (await request.get(`${BACKEND_URL}/api/admin/members/lawyers`, { headers: admin })).json()) as Array<{ id: number; email: string; name: string; blocked: boolean }>
-    const matched = approved.find((l) => l.name === lawyerName)!
+    // 관리자 변호사 목록은 20명씩 나뉘므로, 매칭된 변호사 이름으로 검색해서 찾는다.
+    const approved = ((await (await request.get(`${BACKEND_URL}/api/admin/members/lawyers?q=${encodeURIComponent(lawyerName)}`, { headers: admin })).json()) as { items: Array<{ id: number; email: string; name: string; blocked: boolean }> }).items
+    const matched = approved.find((l) => l.id === lawyerId)!
     expect(matched.blocked).toBe(true)
     const login = await request.post(`${BACKEND_URL}/api/lawyer/auth/login`, {
       data: { email: matched.email, password: lawyerPasswordFor(matched.email) },
@@ -164,7 +165,8 @@ test.describe('상담 신고 및 관리자 정지 처리', () => {
     await loginAsAdmin(page)
     await page.getByRole('button', { name: '회원 관리' }).click()
     await page.getByRole('button', { name: '변호사', exact: true }).click()
-    await page.getByPlaceholder('이메일·이름 검색').fill(matched.email)
+    await page.getByPlaceholder('이메일·이름 검색 후 Enter').fill(matched.email)
+    await page.getByPlaceholder('이메일·이름 검색 후 Enter').press('Enter')
     const row = page.locator('li', { hasText: matched.email })
     await expect(row.getByText('정지됨')).toBeVisible()
     page.once('dialog', (dialog) => dialog.accept())

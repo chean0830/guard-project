@@ -78,12 +78,14 @@ export async function lawyerLoginAction(
   const cookieStore = await cookies()
   cookieStore.set(LAWYER_SESSION_COOKIE, data.token, {
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
   })
   cookieStore.set(LAWYER_SESSION_NAME_COOKIE, data.name, {
     httpOnly: false,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7,

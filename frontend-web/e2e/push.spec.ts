@@ -34,9 +34,9 @@ test('문의를 등록하면 접수 팝업이 뜨고, 대화 보기로 스레드
     multipart: {
       email: lawyerEmail,
       password: 'password123',
-      name: 'E2E푸시변호사',
+      name: `E2E푸시변호사-${Date.now()}-${Math.floor(Math.random() * 100000)}`,
       barNumber: '00001',
-      documents: { name: 'license.pdf', mimeType: 'application/pdf', buffer: Buffer.from('dummy') },
+      documents: { name: 'license.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 dummy license') },
     },
   })
   const pending = (await (

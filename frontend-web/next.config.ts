@@ -43,8 +43,24 @@ for (const key of PROJECT_ONLY_KEYS) {
   }
 }
 
+// 보안 헤더. 다른 사이트가 우리 화면을 몰래 틀(iframe)에 넣어 클릭을 유도하는 공격(클릭재킹), 파일 형식 추측 공격을
+// 막고, 다른 사이트로 넘어갈 때 주소 전체(토큰이 담길 수 있는 쿼리 포함)가 새지 않게 한다.
+// 토스 결제창은 "우리 화면 안에" 토스 틀을 여는 것이라 frame-ancestors 제한과 충돌하지 않는다.
+const SECURITY_HEADERS = [
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(self)" },
+  ...(process.env.NODE_ENV === "production"
+    ? [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }]
+    : []),
+];
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  async headers() {
+    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+  },
 };
 
 export default nextConfig;

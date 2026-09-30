@@ -21,6 +21,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
   const cookieStore = await cookies()
   cookieStore.set('oauth_state', nonce, {
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 10,

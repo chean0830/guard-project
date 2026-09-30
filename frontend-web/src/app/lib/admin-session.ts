@@ -34,6 +34,7 @@ export async function tryAdminLogin(email: string, password: string): Promise<bo
   const cookieStore = await cookies()
   cookieStore.set(ADMIN_SESSION_COOKIE, data.token, {
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
     path: '/',
     maxAge: 60 * 60 * 12, // 12시간 — 백엔드 관리자 토큰 만료 기간과 맞춤

@@ -1,5 +1,7 @@
 'use server'
 
+import { cookies } from 'next/headers'
+
 export type OwnershipEntry = {
   rank: number
   type: 'OWNERSHIP_PRESERVATION' | 'OWNERSHIP_TRANSFER' | 'OTHER'
@@ -69,6 +71,7 @@ export type AnalyzeState =
   | { status: 'idle' }
   | { status: 'error'; message: string }
   | { status: 'success'; result: AnalyzeResult }
+  | { status: 'payment_required'; message: string; loggedIn: boolean }
 
 const BACKEND_URL = process.env.BACKEND_API_URL ?? 'http://localhost:8080'
 
@@ -102,12 +105,19 @@ export async function analyzeAction(_prevState: AnalyzeState, formData: FormData
 
   let response: Response
   try {
+    // 분석은 아이디당 무료 5회라 로그인 세션을 함께 보낸다.
+    const token = (await cookies()).get('session')?.value
     response = await fetch(`${BACKEND_URL}/api/analyze`, {
       method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: outgoing,
     })
   } catch {
     return { status: 'error', message: '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.' }
+  }
+
+  if (response.status === 402) {
+    return { status: 'payment_required', message: await response.text(), loggedIn: true }
   }
 
   if (!response.ok) {

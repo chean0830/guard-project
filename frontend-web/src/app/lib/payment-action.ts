@@ -31,12 +31,13 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 /** 결제창을 열기 전에 서버에서 주문을 만든다 — 금액·주문번호는 항상 서버가 정한다. */
-export async function createPaymentOrderAction(): Promise<CreateOrderResult> {
+export async function createPaymentOrderAction(productType: 'LAWYER_SELECTION' | 'ANALYSIS' = 'LAWYER_SELECTION'): Promise<CreateOrderResult> {
   let response: Response
   try {
     response = await fetch(`${BACKEND_URL}/api/payments/orders`, {
       method: 'POST',
-      headers: await authHeader(),
+      headers: { 'Content-Type': 'application/json', ...(await authHeader()) },
+      body: JSON.stringify({ productType }),
       cache: 'no-store',
     })
   } catch {
@@ -99,6 +100,8 @@ export async function startDirectConsultationAction(
 
 export type PaymentHistoryItem = {
   orderId: string
+  productType: 'LAWYER_SELECTION' | 'ANALYSIS'
+  used: boolean
   orderName: string
   amount: number
   status: 'PAID' | 'FAILED' | 'CANCELED' | 'REFUND_REQUESTED' | 'REFUNDED'

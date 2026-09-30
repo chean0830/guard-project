@@ -4,6 +4,8 @@ import { useId, useRef, useState } from 'react'
 import { useActionState } from 'react'
 import { analyzeAction, type AnalyzeState } from '@/app/lib/analyze-action'
 import { AnalyzeResultView } from '@/app/ui/analyze-result'
+import { AnalysisPaymentRequired } from '@/app/ui/analysis-payment-button'
+import { LoginRequiredDialog } from '@/app/ui/login-required-dialog'
 
 const initialState: AnalyzeState = { status: 'idle' }
 
@@ -305,6 +307,8 @@ export function AnalyzeForm() {
         </p>
       )}
 
+      <LoginRequiredDialog message={state.status === 'error' ? state.message : null} />
+      {state.status === 'payment_required' && <AnalysisPaymentRequired message={state.message} loggedIn={state.loggedIn} />}
       {state.status === 'success' && <AnalyzeResultView result={state.result} />}
     </div>
   )

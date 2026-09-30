@@ -55,7 +55,7 @@ test.describe('실제 변호사 상담 문의', () => {
         documents: {
           name: 'license.pdf',
           mimeType: 'application/pdf',
-          buffer: Buffer.from('dummy license'),
+          buffer: Buffer.from('%PDF-1.4 dummy license'),
         },
       },
     })
@@ -101,12 +101,16 @@ test.describe('실제 변호사 상담 문의', () => {
     // (이 테스트가 만든 변호사가 아니라 다른 e2e 스펙이 만든 변호사가 매칭됐을 수도 있으므로,
     // "우리가 만든 변호사"라고 가정하지 않는다 — 같은 셋업으로 만든 변호사는 전부 비밀번호가
     // password123이라 이메일만 알면 로그인할 수 있다).
-    const matchedLawyerName = await page.locator('p.font-semibold').first().textContent()
+    // 같은 이름의 변호사가 여럿일 수 있어, 문의 목록 API에서 매칭된 변호사 ID를 받아 그 ID로 찾는다.
+    const myConsultations = (await (
+      await request.get(`${BACKEND_URL}/api/consultations`, { headers: { Authorization: `Bearer ${userToken}` } })
+    ).json()) as Array<{ id: number; lawyerId: number }>
+    const matchedLawyerId = myConsultations.find((c) => String(c.id) === consultationId)?.lawyerId
     const approvedResponse = await request.get(`${BACKEND_URL}/api/admin/lawyers?status=APPROVED`, {
       headers: { 'X-Admin-Secret': adminSecret },
     })
-    const approved = (await approvedResponse.json()) as Array<{ email: string; name: string }>
-    const matchedLawyer = approved.find((l) => l.name === matchedLawyerName?.trim())
+    const approved = (await approvedResponse.json()) as Array<{ id: number; email: string; name: string }>
+    const matchedLawyer = approved.find((l) => l.id === matchedLawyerId)
     expect(matchedLawyer).toBeTruthy()
 
     const lawyerLoginResponse = await request.post(`${BACKEND_URL}/api/lawyer/auth/login`, {
