@@ -41,6 +41,10 @@ public class RateLimitCounter {
         this.count++;
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public int getCount() {
         return count;
     }

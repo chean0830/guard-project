@@ -19,7 +19,7 @@ public class RateLimitService {
 
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
     /** 기간 제한 없는(평생) 횟수는 이 고정 날짜 한 줄에 쌓는다. */
-    private static final LocalDate LIFETIME = LocalDate.of(2000, 1, 1);
+    static final LocalDate LIFETIME = LocalDate.of(2000, 1, 1);
 
     private final RateLimitCounterRepository repository;
 

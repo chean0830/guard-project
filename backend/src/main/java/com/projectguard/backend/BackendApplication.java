@@ -3,6 +3,7 @@ package com.projectguard.backend;
 import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,6 +11,7 @@ import java.nio.file.Path;
 import java.util.Set;
 
 @SpringBootApplication
+@EnableScheduling // 만료 기록 정리(common.ExpiredRecordCleanup)
 public class BackendApplication {
 
 	/**
