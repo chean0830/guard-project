@@ -1,5 +1,5 @@
-// 이 파일은 Route Handler(app/api/oauth/**)에서만 import한다 — Route Handler는 원래
-// 서버 전용이라 클라이언트 번들에 섞일 일이 없어 별도의 server-only 가드는 두지 않았다.
+// 이 파일은 서버(Route Handler, 로그인/회원가입 페이지의 서버 컴포넌트)에서만 import한다 —
+// 클라이언트 컴포넌트에서 import하면 시크릿이 번들에 섞일 수 있으니 주의.
 
 export type OAuthProviderName = 'google' | 'kakao' | 'naver'
 
@@ -135,11 +135,22 @@ const naver: ProviderConfig = {
 
 const PROVIDERS: Record<OAuthProviderName, ProviderConfig> = { google, kakao, naver }
 
+/** 키가 설정된(이 프로젝트용 앱을 등록한) provider만 쓴다. 키가 없으면 버튼도 숨기고 로그인 시작도 막는다. */
+function isConfigured(provider: ProviderConfig): boolean {
+  // 카카오는 Client Secret을 끌 수 있어(끄면 토큰 교환에 보내지 않음) 앱 키만 있어도 쓴다.
+  if (provider === kakao) return Boolean(provider.clientId)
+  return Boolean(provider.clientId && provider.clientSecret)
+}
+
 export function getProvider(name: string): ProviderConfig | null {
   if (name === 'google' || name === 'kakao' || name === 'naver') {
-    return PROVIDERS[name]
+    return isConfigured(PROVIDERS[name]) ? PROVIDERS[name] : null
   }
   return null
+}
+
+export function configuredProviders(): OAuthProviderName[] {
+  return (Object.keys(PROVIDERS) as OAuthProviderName[]).filter((name) => isConfigured(PROVIDERS[name]))
 }
 
 export function buildAuthorizeUrl(name: string, state: string): string | null {

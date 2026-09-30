@@ -1,3 +1,4 @@
+import { configuredProviders } from '@/app/lib/oauth-providers'
 import { SignupForm } from '@/app/ui/signup-form'
 
 export default async function SignupPage({
@@ -8,7 +9,7 @@ export default async function SignupPage({
   const { redirect, oauthError } = await searchParams
   return (
     <div className="flex flex-1 items-center justify-center bg-white px-4 py-16 dark:bg-zinc-950">
-      <SignupForm redirectTo={redirect ?? '/'} oauthError={oauthError} />
+      <SignupForm redirectTo={redirect ?? '/'} oauthError={oauthError} socialProviders={configuredProviders()} />
     </div>
   )
 }

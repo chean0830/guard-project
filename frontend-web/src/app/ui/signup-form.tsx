@@ -3,14 +3,22 @@
 import Link from 'next/link'
 import { useActionState } from 'react'
 import { signupAction, type AuthFormState } from '@/app/lib/auth-action'
-import { SocialLoginButtons } from '@/app/ui/social-login-buttons'
+import { SocialLoginButtons, type SocialProvider } from '@/app/ui/social-login-buttons'
 
 const initialState: AuthFormState = { status: 'idle' }
 
 const inputStyle =
   'w-full rounded-xl border border-zinc-300 bg-transparent px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:border-zinc-700 dark:focus:ring-orange-900/30'
 
-export function SignupForm({ redirectTo, oauthError }: { redirectTo: string; oauthError?: string }) {
+export function SignupForm({
+  redirectTo,
+  oauthError,
+  socialProviders,
+}: {
+  redirectTo: string
+  oauthError?: string
+  socialProviders: SocialProvider[]
+}) {
   const [state, formAction, pending] = useActionState(signupAction.bind(null, redirectTo), initialState)
 
   return (
@@ -24,9 +32,11 @@ export function SignupForm({ redirectTo, oauthError }: { redirectTo: string; oau
         </p>
       )}
 
-      <div className="mt-6">
-        <SocialLoginButtons redirectTo={redirectTo} />
-      </div>
+      {socialProviders.length > 0 && (
+        <div className="mt-6">
+          <SocialLoginButtons redirectTo={redirectTo} enabled={socialProviders} />
+        </div>
+      )}
 
       <div className="my-6 flex items-center gap-3 text-xs text-zinc-400">
         <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />

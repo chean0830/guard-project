@@ -35,7 +35,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
     loginUrl.searchParams.set('oauthError', '로그인 요청이 유효하지 않습니다. 다시 시도해주세요.')
     return NextResponse.redirect(loginUrl)
   }
-  const redirectTo = encodedRedirect ? Buffer.from(encodedRedirect, 'base64url').toString() : '/'
+  const decoded = encodedRedirect ? Buffer.from(encodedRedirect, 'base64url').toString() : '/'
+  // 로그인 후 돌아갈 곳은 우리 사이트 안의 경로만 허용한다 (외부 사이트로 보내는 오픈 리다이렉트 방지).
+  const redirectTo = decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.startsWith('/\\') ? decoded : '/'
 
   try {
     const accessToken = await provider.exchangeCode(code)
