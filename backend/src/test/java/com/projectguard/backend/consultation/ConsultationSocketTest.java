@@ -151,7 +151,7 @@ class ConsultationSocketTest {
 
     @Test
     void 변호사_목록_소켓은_새_문의와_새_메시지를_즉시_알린다() throws Exception {
-        Connection inbox = connect("/ws/lawyer-inbox", ticketService.issueForLawyerInbox(lawyerId), "http://localhost:3000");
+        Connection inbox = connect("/ws/lawyer-inbox", ticketService.issueForInbox(SenderType.LAWYER, lawyerId), "http://localhost:3000");
 
         Long newConsultation = consultationService.startConsultation(userId, "새 문의").getId();
         String created = inbox.received().poll(3, TimeUnit.SECONDS);
@@ -173,7 +173,7 @@ class ConsultationSocketTest {
         Lawyer other = lawyerAuthService.signup("ws-other-lawyer-" + UUID.randomUUID().toString().substring(0, 8) + "@example.com",
                 "password123", "이변호", null, "67890",
                 List.of(new MockMultipartFile("documents", "license.pdf", "application/pdf", "%PDF-1.4 dummy".getBytes())));
-        Connection otherInbox = connect("/ws/lawyer-inbox", ticketService.issueForLawyerInbox(other.getId()), "http://localhost:3000");
+        Connection otherInbox = connect("/ws/lawyer-inbox", ticketService.issueForInbox(SenderType.LAWYER, other.getId()), "http://localhost:3000");
 
         consultationService.postMessage(consultationId, SenderType.USER, userId, "내 변호사에게만");
 
@@ -183,10 +183,32 @@ class ConsultationSocketTest {
 
     @Test
     void 대화방_입장권과_목록_입장권은_서로_바꿔_쓸_수_없다() {
-        String inboxTicket = ticketService.issueForLawyerInbox(lawyerId);
+        String inboxTicket = ticketService.issueForInbox(SenderType.LAWYER, lawyerId);
         assertThrows(ExecutionException.class, () -> connect("/ws/consultations", inboxTicket, "http://localhost:3000"));
 
         String roomTicket = ticketService.issue(consultationId, SenderType.LAWYER, lawyerId);
         assertThrows(ExecutionException.class, () -> connect("/ws/lawyer-inbox", roomTicket, "http://localhost:3000"));
+    }
+
+    @Test
+    void 회원_목록_소켓은_변호사가_답장하면_즉시_알린다() throws Exception {
+        Connection inbox = connect("/ws/user-inbox", ticketService.issueForInbox(SenderType.USER, userId), "http://localhost:3000");
+
+        consultationService.postMessage(consultationId, SenderType.LAWYER, lawyerId, "답변드립니다");
+
+        String payload = inbox.received().poll(3, TimeUnit.SECONDS);
+        assertNotNull(payload, "변호사가 답장하면 3초 안에 회원 목록 알림이 와야 한다");
+        assertTrue(payload.contains("\"type\":\"inbox\""), payload);
+        assertTrue(payload.contains("\"consultationId\":" + consultationId), payload);
+        inbox.session().close();
+    }
+
+    @Test
+    void 회원_목록_입장권과_변호사_목록_입장권은_서로_바꿔_쓸_수_없다() {
+        String userInbox = ticketService.issueForInbox(SenderType.USER, userId);
+        assertThrows(ExecutionException.class, () -> connect("/ws/lawyer-inbox", userInbox, "http://localhost:3000"));
+
+        String lawyerInbox = ticketService.issueForInbox(SenderType.LAWYER, lawyerId);
+        assertThrows(ExecutionException.class, () -> connect("/ws/user-inbox", lawyerInbox, "http://localhost:3000"));
     }
 }

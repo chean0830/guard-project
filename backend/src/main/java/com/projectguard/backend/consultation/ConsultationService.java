@@ -98,6 +98,14 @@ public class ConsultationService {
         return blocks.isEmpty() ? "NONE" : "BLOCKED_ME";
     }
 
+    /** 대화방 양쪽(회원·변호사)의 상담 목록 화면에 변화를 알린다. */
+    private void publishInboxChanged(Consultation consultation, InboxChangedEvent.Reason reason) {
+        eventPublisher.publishEvent(new InboxChangedEvent(
+                SenderType.LAWYER, consultation.getLawyerId(), consultation.getId(), reason));
+        eventPublisher.publishEvent(new InboxChangedEvent(
+                SenderType.USER, consultation.getUserId(), consultation.getId(), reason));
+    }
+
     private void requireMessage(String initialMessage) {
         if (initialMessage == null || initialMessage.isBlank()) {
             throw new IllegalArgumentException("문의 내용을 입력해주세요.");
@@ -107,8 +115,7 @@ public class ConsultationService {
     private Consultation openConsultation(Long userId, Lawyer lawyer, String initialMessage) {
         Consultation consultation = consultationRepository.save(new Consultation(userId, lawyer.getId()));
         messageRepository.save(new ConsultationMessage(consultation.getId(), SenderType.USER, initialMessage));
-        eventPublisher.publishEvent(new LawyerInboxChangedEvent(
-                lawyer.getId(), consultation.getId(), LawyerInboxChangedEvent.Reason.NEW_CONSULTATION));
+        publishInboxChanged(consultation, InboxChangedEvent.Reason.NEW_CONSULTATION);
         notifyLawyerIfEnabled(lawyer, initialMessage);
         return consultation;
     }
@@ -133,8 +140,7 @@ public class ConsultationService {
         consultationRepository.save(consultation);
         eventPublisher.publishEvent(new ConsultationMessagePostedEvent(
                 consultationId, senderType, content, message.getCreatedAt()));
-        eventPublisher.publishEvent(new LawyerInboxChangedEvent(
-                consultation.getLawyerId(), consultationId, LawyerInboxChangedEvent.Reason.NEW_MESSAGE));
+        publishInboxChanged(consultation, InboxChangedEvent.Reason.NEW_MESSAGE);
 
         if (senderType == SenderType.USER) {
             lawyerRepository.findById(consultation.getLawyerId())

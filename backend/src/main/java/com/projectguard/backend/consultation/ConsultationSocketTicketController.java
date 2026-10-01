@@ -64,7 +64,18 @@ public class ConsultationSocketTicketController {
         Long lawyerId = lawyerAuthService.validate(extractToken(authorization))
                 .orElseThrow(() -> new InvalidCredentialsException("로그인이 필요합니다."))
                 .getId();
-        return new TicketResponse(ticketService.issueForLawyerInbox(lawyerId));
+        return new TicketResponse(ticketService.issueForInbox(SenderType.LAWYER, lawyerId));
+    }
+
+    /** 회원 상담 목록 실시간 알림(/ws/user-inbox) 입장권. */
+    @PostMapping("/api/consultations/inbox/socket-ticket")
+    public TicketResponse issueForUserInbox(
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        Long userId = authService.validate(extractToken(authorization))
+                .orElseThrow(() -> new InvalidCredentialsException("로그인이 필요합니다."))
+                .getId();
+        return new TicketResponse(ticketService.issueForInbox(SenderType.USER, userId));
     }
 
     private String extractToken(String authorization) {
