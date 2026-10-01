@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final ApiClient api;
@@ -86,6 +87,14 @@ class _LoginScreenState extends State<LoginScreen> {
             if (_error != null) ...[const SizedBox(height: 16), NoticeBox(_error!)],
             const SizedBox(height: 24),
             PillButton(label: _loading ? '로그인 중...' : '로그인', loading: _loading, onPressed: _submit),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => ForgotPasswordScreen(api: widget.api, initialAccountType: 'USER'))),
+                child: const Text('비밀번호를 잊으셨나요?', style: TextStyle(color: AppColors.zinc500, fontSize: 13)),
+              ),
+            ),
             const SizedBox(height: 24),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Text('아직 계정이 없으신가요? ', style: TextStyle(fontSize: 14, color: AppColors.zinc500)),

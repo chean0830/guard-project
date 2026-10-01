@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import 'forgot_password_screen.dart';
 
 /// 변호사 전용 로그인. 관리자 승인이 끝난 계정만 로그인할 수 있다.
 class LawyerLoginScreen extends StatefulWidget {
@@ -97,6 +98,14 @@ class _LawyerLoginScreenState extends State<LawyerLoginScreen> {
               loading: _loading,
               onPressed: _submit,
               color: AppColors.zinc900,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => ForgotPasswordScreen(api: widget.api, initialAccountType: 'LAWYER'))),
+                child: const Text('비밀번호를 잊으셨나요?', style: TextStyle(color: AppColors.zinc500, fontSize: 13)),
+              ),
             ),
             const SizedBox(height: 24),
             Text(keepAll('변호사 회원가입은 자격 증명 서류 제출이 필요해서 웹에서 진행해주세요.'),

@@ -38,6 +38,39 @@ class MemberApi {
   }
 
   Future<void> unblock(int blockId) => _api.authedJson('DELETE', '/api/blocks/$blockId');
+
+  Future<MemberProfile> profile() async =>
+      MemberProfile.fromJson(await _api.authedJson('GET', '/api/profile') as Map<String, dynamic>);
+
+  Future<MemberProfile> updateName(String? name) async => MemberProfile.fromJson(
+      await _api.authedJson('PUT', '/api/profile', body: {'name': name}) as Map<String, dynamic>);
+
+  Future<void> changePassword(String current, String next) =>
+      _api.authedJson('POST', '/api/profile/password', body: {'currentPassword': current, 'newPassword': next});
+
+  /// 회원 탈퇴. 이메일 가입은 비밀번호, 소셜 전용 계정은 확인 문구("탈퇴")로 본인 의사를 확인한다.
+  Future<void> withdraw({String? password, String? confirmText}) =>
+      _api.authedJson('DELETE', '/api/profile', body: {'password': password, 'confirmText': confirmText});
+}
+
+class MemberProfile {
+  final String email;
+  final String? name;
+
+  /// LOCAL(이메일 가입) 또는 GOOGLE·KAKAO·NAVER.
+  final String provider;
+  final bool hasPassword;
+
+  MemberProfile({required this.email, this.name, required this.provider, required this.hasPassword});
+
+  bool get isLocal => provider == 'LOCAL';
+
+  factory MemberProfile.fromJson(Map<String, dynamic> json) => MemberProfile(
+        email: json['email'] as String,
+        name: json['name'] as String?,
+        provider: (json['provider'] ?? 'LOCAL') as String,
+        hasPassword: (json['hasPassword'] ?? true) as bool,
+      );
 }
 
 class MemberConsultationSummary {

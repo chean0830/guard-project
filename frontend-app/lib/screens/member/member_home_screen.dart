@@ -6,8 +6,9 @@ import '../../theme.dart';
 import '../../widgets/common.dart';
 import '../analyze_screen.dart';
 import 'consult_screen.dart';
+import 'member_settings_screen.dart';
 
-/// 회원 로그인 후 첫 화면: 아래 탭으로 등기부 분석 / 변호사 상담을 오간다.
+/// 회원 로그인 후 첫 화면: 아래 탭으로 등기부 분석 / 변호사 상담 / 설정을 오간다.
 class MemberHomeScreen extends StatefulWidget {
   final ApiClient api;
   final Session session;
@@ -52,6 +53,7 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
             onOpenConsult: () => setState(() => _tab = 1),
           ),
           ConsultScreen(memberApi: _memberApi, onLoggedOut: widget.onLoggedOut),
+          MemberSettingsScreen(api: widget.api, memberApi: _memberApi, onLoggedOut: widget.onLoggedOut),
         ]),
       ),
       bottomNavigationBar: NavigationBar(
@@ -69,6 +71,11 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
             icon: Icon(Icons.forum_outlined),
             selectedIcon: Icon(Icons.forum, color: AppColors.orange600),
             label: '변호사 상담',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings, color: AppColors.orange600),
+            label: '설정',
           ),
         ],
       ),

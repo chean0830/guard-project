@@ -143,6 +143,16 @@ class ApiClient {
     return _saveSession(res, AccountRole.lawyer);
   }
 
+  /// 비밀번호 재설정 링크를 가입한 이메일로 보낸다. 링크는 웹의 재설정 화면으로 열린다.
+  /// [accountType]: USER(회원) 또는 LAWYER(변호사). 서버가 안내 문구를 돌려준다.
+  Future<String> requestPasswordReset(String email, String accountType) async {
+    final res = await _postJson('/api/auth/password-reset/request', {'email': email, 'accountType': accountType});
+    _throwIfFailed(res);
+    final text = utf8.decode(res.bodyBytes).trim();
+    if (text.isEmpty) return '재설정 링크를 보냈어요. 메일함을 확인해주세요.';
+    return (jsonDecode(text) as Map<String, dynamic>)['message'] as String;
+  }
+
   /// 회원가입 1단계: 이메일로 6자리 인증번호를 보낸다.
   Future<void> requestSignupCode(String email) async {
     _throwIfFailed(await _postJson('/api/auth/signup/code', {'email': email}));
