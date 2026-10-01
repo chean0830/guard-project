@@ -5,21 +5,21 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../api/api_client.dart';
-import '../../api/lawyer_api.dart';
+import '../../api/consultation_api.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
 
-/// 상담 대화방(변호사 쪽). 실시간 채팅: 새 메시지는 소켓으로 받아 바로 화면에 붙이고, 주기 조회는 하지 않는다.
+/// 상담 대화방 (회원·변호사 공통). 실시간 채팅: 새 메시지는 소켓으로 받아 바로 화면에 붙이고, 주기 조회는 하지 않는다.
 /// 소켓이 끊겼다가 다시 연결될 때만 대화를 한 번 다시 불러와 끊긴 사이의 메시지를 채운다.
 class ConsultationThreadScreen extends StatefulWidget {
-  final LawyerApi lawyerApi;
+  final ConsultationChatApi chat;
   final int consultationId;
   final String counterpartName;
   final VoidCallback onLoggedOut;
 
   const ConsultationThreadScreen({
     super.key,
-    required this.lawyerApi,
+    required this.chat,
     required this.consultationId,
     required this.counterpartName,
     required this.onLoggedOut,
@@ -58,7 +58,7 @@ class _ConsultationThreadScreenState extends State<ConsultationThreadScreen> {
 
   Future<void> _load() async {
     try {
-      final thread = await widget.lawyerApi.thread(widget.consultationId);
+      final thread = await widget.chat.thread(widget.consultationId);
       if (mounted) {
         setState(() {
           _thread = thread;
@@ -81,7 +81,7 @@ class _ConsultationThreadScreenState extends State<ConsultationThreadScreen> {
   Future<void> _connect() async {
     if (_disposed) return;
     try {
-      final socket = await widget.lawyerApi.connectThread(widget.consultationId);
+      final socket = await widget.chat.connectThread(widget.consultationId);
       if (_disposed) {
         socket.close();
         return;
@@ -89,7 +89,7 @@ class _ConsultationThreadScreenState extends State<ConsultationThreadScreen> {
       _socket = socket;
       socket.listen(
         (data) {
-          final message = LawyerApi.parseSocketMessage(data);
+          final message = ConsultationChatApi.parseSocketMessage(data);
           if (message != null) _append(message);
         },
         onDone: _scheduleReconnect,
@@ -123,7 +123,7 @@ class _ConsultationThreadScreenState extends State<ConsultationThreadScreen> {
     if (text.isEmpty || _sending) return;
     setState(() => _sending = true);
     try {
-      final sent = await widget.lawyerApi.sendMessage(widget.consultationId, text);
+      final sent = await widget.chat.sendMessage(widget.consultationId, text);
       _input.clear();
       _append(sent);
     } on ApiException catch (e) {
@@ -146,7 +146,7 @@ class _ConsultationThreadScreenState extends State<ConsultationThreadScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       showDragHandle: true,
-      builder: (_) => _ReportSheet(lawyerApi: widget.lawyerApi, consultationId: widget.consultationId),
+      builder: (_) => _ReportSheet(chat: widget.chat, consultationId: widget.consultationId),
     );
     if (message != null) _toast(message);
   }
@@ -156,7 +156,8 @@ class _ConsultationThreadScreenState extends State<ConsultationThreadScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: const Text('이 문의자를 차단할까요?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        title: Text('이 ${widget.chat.counterpartLabel}를 차단할까요?',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           for (final line in const [
             '· 서로 더 이상 메시지를 주고받을 수 없어요.',
@@ -183,7 +184,7 @@ class _ConsultationThreadScreenState extends State<ConsultationThreadScreen> {
     );
     if (ok != true) return;
     try {
-      await widget.lawyerApi.block(widget.consultationId);
+      await widget.chat.block(widget.consultationId);
       await _load();
       _toast('차단했어요.');
     } catch (e, stack) {
@@ -199,8 +200,11 @@ class _ConsultationThreadScreenState extends State<ConsultationThreadScreen> {
       appBar: AppBar(
         titleSpacing: 0,
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('문의자', style: TextStyle(fontSize: 12, color: AppColors.zinc500, fontWeight: FontWeight.w400)),
-          Text(thread?.userDisplayName ?? widget.counterpartName,
+          Text(
+              [widget.chat.counterpartLabel, if (thread?.counterpartDetail != null) thread!.counterpartDetail!]
+                  .join(' · '),
+              style: const TextStyle(fontSize: 12, color: AppColors.zinc500, fontWeight: FontWeight.w400)),
+          Text(thread?.counterpartName ?? widget.counterpartName,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           Row(children: [
             Container(
@@ -236,7 +240,7 @@ class _ConsultationThreadScreenState extends State<ConsultationThreadScreen> {
                     itemCount: thread.messages.length,
                     itemBuilder: (context, i) {
                       final message = thread.messages[thread.messages.length - 1 - i];
-                      return _Bubble(message: message, mine: message.senderType == 'LAWYER');
+                      return _Bubble(message: message, mine: message.senderType == widget.chat.mySenderType);
                     },
                   ),
           ),
@@ -272,7 +276,8 @@ class _ConsultationThreadScreenState extends State<ConsultationThreadScreen> {
                   minLines: 1,
                   maxLines: 5,
                   textInputAction: TextInputAction.newline,
-                  decoration: const InputDecoration(hintText: '답변을 입력하세요'),
+                  decoration: InputDecoration(
+                      hintText: widget.chat.mySenderType == 'LAWYER' ? '답변을 입력하세요' : '메시지를 입력하세요'),
                 ),
               ),
               const SizedBox(width: 8),
@@ -342,10 +347,10 @@ const _reportReasons = [
 ];
 
 class _ReportSheet extends StatefulWidget {
-  final LawyerApi lawyerApi;
+  final ConsultationChatApi chat;
   final int consultationId;
 
-  const _ReportSheet({required this.lawyerApi, required this.consultationId});
+  const _ReportSheet({required this.chat, required this.consultationId});
 
   @override
   State<_ReportSheet> createState() => _ReportSheetState();
@@ -369,7 +374,7 @@ class _ReportSheetState extends State<_ReportSheet> {
       _error = null;
     });
     try {
-      final message = await widget.lawyerApi.report(
+      final message = await widget.chat.report(
           widget.consultationId, _reason!, _detail.text.trim().isEmpty ? null : _detail.text.trim());
       if (mounted) Navigator.pop(context, message);
     } catch (e, stack) {

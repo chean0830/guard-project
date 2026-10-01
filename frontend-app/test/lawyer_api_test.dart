@@ -32,12 +32,12 @@ void main() {
   });
 
   test('실시간 소켓에서 새 메시지 알림만 메시지로 바꾼다', () {
-    final message = LawyerApi.parseSocketMessage(
+    final message = ConsultationChatApi.parseSocketMessage(
         '{"type":"message","senderType":"USER","content":"안녕하세요","createdAt":"2026-10-01T03:00:00.123456Z"}');
     expect(message!.senderType, 'USER');
     expect(message.content, '안녕하세요');
-    expect(LawyerApi.parseSocketMessage('{"type":"ping"}'), isNull);
-    expect(LawyerApi.parseSocketMessage('not json'), isNull);
+    expect(ConsultationChatApi.parseSocketMessage('{"type":"ping"}'), isNull);
+    expect(ConsultationChatApi.parseSocketMessage('not json'), isNull);
   });
 
   test('같은 메시지가 전송 응답과 소켓으로 두 번 와도 한 번만 들어간다', () {

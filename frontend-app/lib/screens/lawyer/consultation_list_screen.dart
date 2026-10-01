@@ -7,7 +7,7 @@ import '../../api/api_client.dart';
 import '../../api/lawyer_api.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
-import 'consultation_thread_screen.dart';
+import '../consultation/consultation_thread_screen.dart';
 import 'lawyer_settings_screen.dart';
 
 /// 변호사 로그인 후 첫 화면: 배정된 상담 문의 목록.
@@ -105,7 +105,7 @@ class _ConsultationListScreenState extends State<ConsultationListScreen> {
   Future<void> _open(ConsultationSummary item) async {
     await Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => ConsultationThreadScreen(
-        lawyerApi: _lawyerApi,
+        chat: _lawyerApi.chat,
         consultationId: item.id,
         counterpartName: item.userDisplayName,
         onLoggedOut: widget.onLoggedOut,
@@ -113,7 +113,7 @@ class _ConsultationListScreenState extends State<ConsultationListScreen> {
     ));
     // 대화방에서 실시간으로 받은 메시지는 서버에 다시 묻지 않았으므로, 나올 때 한 번 읽음 처리한다.
     try {
-      await _lawyerApi.thread(item.id);
+      await _lawyerApi.chat.thread(item.id);
     } catch (_) {
       // 읽음 처리가 실패해도 목록은 다시 불러온다.
     }

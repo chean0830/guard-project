@@ -177,3 +177,28 @@ PreferredSizeWidget brandAppBar({List<Widget>? actions, bool showBack = false}) 
 /// 글자 사이에 줄바꿈 금지 문자(U+2060)를 넣어, 띄어쓰기에서만 줄이 바뀌게 한다.
 String keepAll(String text) =>
     text.split(' ').map((word) => word.characters.join('⁠')).join(' ');
+
+/// "● 실시간 연결됨 / 연결 중..." 표시.
+class LiveIndicator extends StatelessWidget {
+  final bool connected;
+  final double fontSize;
+
+  const LiveIndicator({super.key, required this.connected, this.fontSize = 12});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+        width: 7,
+        height: 7,
+        decoration: BoxDecoration(
+          color: connected ? AppColors.emerald600 : AppColors.zinc400,
+          shape: BoxShape.circle,
+        ),
+      ),
+      const SizedBox(width: 4),
+      Text(connected ? '실시간 연결됨' : '연결 중...',
+          style: TextStyle(fontSize: fontSize, color: AppColors.zinc500, fontWeight: FontWeight.w400)),
+    ]);
+  }
+}

@@ -19,13 +19,15 @@ const _contractTypes = {
   'WOLSE': '월세',
 };
 
-/// 로그인 후 첫 화면. 웹의 "지금 바로 확인해보세요" 분석 폼과 같은 구성.
+/// 회원 홈의 "등기부 분석" 탭. 웹의 "지금 바로 확인해보세요" 분석 폼과 같은 구성.
 class AnalyzeScreen extends StatefulWidget {
   final ApiClient api;
-  final String email;
   final VoidCallback onLoggedOut;
 
-  const AnalyzeScreen({super.key, required this.api, required this.email, required this.onLoggedOut});
+  /// 고위험 결과에서 "변호사와 상담하기"를 누르면 상담 탭으로 보낸다.
+  final VoidCallback onOpenConsult;
+
+  const AnalyzeScreen({super.key, required this.api, required this.onLoggedOut, required this.onOpenConsult});
 
   @override
   State<AnalyzeScreen> createState() => _AnalyzeScreenState();
@@ -132,7 +134,8 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
         declaredAddress: _address.text,
       ));
       if (!mounted) return;
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => ResultScreen(result: result)));
+      Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => ResultScreen(result: result, onOpenConsult: widget.onOpenConsult)));
     } on ApiException catch (e) {
       if (e.loginRequired) {
         widget.onLoggedOut();
@@ -146,11 +149,6 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  Future<void> _logout() async {
-    await widget.api.logout();
-    widget.onLoggedOut();
   }
 
   Widget _dropdown(String value, Map<String, String> options, ValueChanged<String> onChanged) {
@@ -167,21 +165,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
   Widget build(BuildContext context) {
     final digitsOnly = [FilteringTextInputFormatter.digitsOnly];
 
-    return Scaffold(
-      appBar: brandAppBar(actions: [
-        PopupMenuButton<String>(
-          tooltip: '내 계정',
-          color: Colors.white,
-          icon: const Icon(Icons.account_circle_outlined, color: AppColors.zinc600),
-          itemBuilder: (_) => [
-            PopupMenuItem(enabled: false, child: Text(widget.email, style: const TextStyle(fontSize: 13))),
-            const PopupMenuItem(value: 'logout', child: Text('로그아웃')),
-          ],
-          onSelected: (v) => v == 'logout' ? _logout() : null,
-        ),
-      ]),
-      body: SafeArea(
-        child: Form(
+    return Form(
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 28, 16, 32),
@@ -323,8 +307,6 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                   textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: AppColors.zinc400)),
             ],
           ),
-        ),
-      ),
     );
   }
 }

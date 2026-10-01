@@ -38,8 +38,9 @@ String _won(int? amount) {
 
 class ResultScreen extends StatelessWidget {
   final AnalyzeResult result;
+  final VoidCallback onOpenConsult;
 
-  const ResultScreen({super.key, required this.result});
+  const ResultScreen({super.key, required this.result, required this.onOpenConsult});
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +56,13 @@ class ResultScreen extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           children: [
             _Verdict(hasHighRisk: result.hasHighRisk),
+            if (result.hasHighRisk) ...[
+              const SizedBox(height: 12),
+              _LawyerCta(onTap: () {
+                Navigator.of(context).pop();
+                onOpenConsult();
+              }),
+            ],
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
@@ -184,6 +192,35 @@ class _Verdict extends StatelessWidget {
         SizedBox(height: 6),
         Text('계약을 진행하기 전에, 아래 위험 신호를 꼭 확인해보세요.',
             textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: AppColors.red800)),
+      ]),
+    );
+  }
+}
+
+/// 고위험일 때 변호사 상담으로 안내 (웹 분석 결과와 같은 문구).
+class _LawyerCta extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _LawyerCta({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFFCA5A5)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Text(keepAll('혹시 벌써 집을 계약하셨나요? 🏠\n혹시 보증금(전세금)을 돌려받지 못하고 계시나요? 😥'),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.5)),
+        const SizedBox(height: 6),
+        Text(keepAll('Project Guard에 등록된 변호사 중, 전세사기·부동산 사건 경험이 많은 변호사 한 분과 무작위로 매칭해드려요. ⚖️'),
+            textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: AppColors.zinc500, height: 1.5)),
+        const SizedBox(height: 12),
+        PillButton(label: '나에게 꼭 맞는 변호사와 무료로 상담하기 💬', onPressed: onTap, color: AppColors.red600, height: 46),
       ]),
     );
   }
