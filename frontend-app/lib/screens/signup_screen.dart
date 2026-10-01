@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../api/api_client.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/social_login_buttons.dart';
 import 'legal_screen.dart';
 
 /// 이메일 회원가입. 웹과 같이 이메일 인증(6자리 인증번호)을 마쳐야 비밀번호 입력과 가입 버튼이 열린다.
@@ -122,7 +123,17 @@ class _SignupScreenState extends State<SignupScreen> {
             const SizedBox(height: 8),
             Text(keepAll('이메일 인증 후 바로 이용할 수 있어요. 아이디당 5회까지 무료로 분석해드려요.'),
                 style: TextStyle(fontSize: 14, color: AppColors.zinc500, height: 1.5)),
-            const SizedBox(height: 28),
+            const SizedBox(height: 4),
+            SocialLoginSection(
+              api: widget.api,
+              dividerText: '또는 이메일로 가입',
+              dividerAbove: false,
+              onLoggedIn: widget.onSignedUp,
+              // 오류 상자는 화면 아래 가입 버튼 옆에 있어, 위쪽 소셜 버튼의 오류는 알림줄로 보여준다.
+              onError: (message) =>
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message))),
+            ),
+            const SizedBox(height: 24),
             const FieldLabel('이메일'),
             Row(children: [
               Expanded(

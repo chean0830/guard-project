@@ -23,10 +23,11 @@ iOS/Android 공통 앱. 웹(frontend-web)과 같은 백엔드 API를 그대로 �
   신고 관리(대화 원문 확인·이용 정지·기각) / 회원 관리(회원·변호사 검색, 이용 정지·해제) / 결제 관리(환불 승인·거절)
 - 푸시 알림(FCM): 회원은 변호사 답장, 변호사는 새 문의·회원 메시지 알림. 알림을 누르면 그 대화방이 열리고,
   앱을 보고 있을 때는 화면 아래 알림줄로 보여준다. 로그아웃하면 그 기기로는 알림이 오지 않는다
+- 소셜 로그인(구글·카카오·네이버, 회원): 웹의 소셜 로그인 흐름을 앱 안 브라우저 탭으로 열고 1회용 코드(PKCE)로 세션을 받는다.
+  웹에 키가 설정된 것만 버튼이 보인다
 - 등기부등본 촬영 · 사진 선택 · PDF 업로드 → `POST /api/analyze`
 - 분석 결과: 위험 신호, 직접 확인할 체크리스트, 등기부 요약, 건축물대장, 갑구/을구/압류 내역
 
-아직 없는 것: 소셜 로그인
 
 ## 실행 방법
 
@@ -62,6 +63,19 @@ flutter run --dart-define=API_BASE_URL=http://192.168.0.10:8080
 ```bash
 flutter run --dart-define=TOSS_CLIENT_KEY=test_ck_...
 ```
+
+### 소셜 로그인
+
+웹(`frontend-web`, 기본 `http://localhost:3000`)이 켜져 있어야 하고, 웹 `.env.local`의 `OAUTH_BASE_URL`과 같은 주소여야 한다
+(구글·카카오·네이버에 등록된 돌아올 주소가 웹 주소라서). 안드로이드 에뮬레이터·USB 연결 휴대폰에서는 기기의 localhost를
+PC로 연결한다.
+
+```bash
+adb reverse tcp:3000 tcp:3000
+flutter run --dart-define=WEB_BASE_URL=http://localhost:3000   # 기본값이라 생략 가능
+```
+
+배포 때는 `WEB_BASE_URL`을 실제 웹 주소(https)로 넣는다.
 
 ### 푸시 알림 (Firebase Cloud Messaging)
 

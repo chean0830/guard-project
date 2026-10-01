@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import '../widgets/social_login_buttons.dart';
 import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -94,6 +95,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     builder: (_) => ForgotPasswordScreen(api: widget.api, initialAccountType: 'USER'))),
                 child: const Text('비밀번호를 잊으셨나요?', style: TextStyle(color: AppColors.zinc500, fontSize: 13)),
               ),
+            ),
+            SocialLoginSection(
+              api: widget.api,
+              dividerText: '또는 SNS로 로그인',
+              onLoggedIn: widget.onLoggedIn,
+              onError: (message) => setState(() => _error = message),
             ),
             const SizedBox(height: 24),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [

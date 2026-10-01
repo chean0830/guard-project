@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
@@ -136,6 +140,45 @@ class ApiClient {
     if (adminRes?.statusCode == 200) return _saveSession(adminRes!, AccountRole.admin);
     _throwIfFailed(res);
     throw StateError('unreachable');
+  }
+
+  /// 웹에 키가 설정된 소셜 로그인 종류 (google·kakao·naver). 웹에 연결할 수 없으면 빈 목록 — 버튼을 숨긴다.
+  Future<List<String>> socialProviders() async {
+    try {
+      final res = await _http.get(Uri.parse('${AppConfig.webBaseUrl}/api/oauth/providers')).timeout(const Duration(seconds: 5));
+      if (res.statusCode != 200) return const [];
+      final body = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      return [for (final p in body['providers'] as List) p as String];
+    } catch (e) {
+      debugPrint('소셜 로그인 목록을 불러오지 못했어요: $e');
+      return const [];
+    }
+  }
+
+  /// 소셜 로그인 (회원). 웹의 소셜 로그인 화면을 앱 안의 브라우저 탭으로 열고, 끝나면 projectguard:// 로 돌아온다.
+  /// 돌아올 때는 세션 토큰 대신 1회용 코드만 받고, 처음에 만든 verifier와 함께 서버에서 토큰으로 바꾼다(PKCE) —
+  /// 다른 앱이 같은 주소를 가로채도 로그인할 수 없다. 사용자가 창을 닫으면 null.
+  Future<Session?> socialLogin(String provider) async {
+    final random = Random.secure();
+    final verifier = base64UrlEncode(List<int>.generate(32, (_) => random.nextInt(256))).replaceAll('=', '');
+    final challenge = base64UrlEncode(sha256.convert(ascii.encode(verifier)).bytes).replaceAll('=', '');
+    final url = Uri.parse('${AppConfig.webBaseUrl}/api/oauth/$provider')
+        .replace(queryParameters: {'app_challenge': challenge, 'redirect': '/'});
+
+    final String result;
+    try {
+      result = await FlutterWebAuth2.authenticate(url: url.toString(), callbackUrlScheme: 'projectguard');
+    } on PlatformException catch (e) {
+      if (e.code == 'CANCELED') return null;
+      rethrow;
+    }
+    final params = Uri.parse(result).queryParameters;
+    final error = params['error'];
+    if (error != null) throw ApiException(400, error);
+    final code = params['code'];
+    if (code == null) throw ApiException(400, '로그인 처리 중 오류가 발생했습니다.');
+    final res = await _postJson('/api/auth/app-login/exchange', {'code': code, 'codeVerifier': verifier});
+    return _saveSession(res, AccountRole.user);
   }
 
   /// 변호사 로그인. 관리자 승인이 끝난 계정만 로그인된다.

@@ -47,6 +47,7 @@ public class ExpiredRecordCleanup {
         removed += delete("delete from AuthToken t where t.expiresAt < :now", "now", now);
         removed += delete("delete from LawyerAuthToken t where t.expiresAt < :now", "now", now);
         removed += delete("delete from AdminAuthToken t where t.expiresAt < :now", "now", now);
+        removed += delete("delete from AppLoginCode c where c.expiresAt < :now", "now", now);
         removed += delete("delete from PasswordResetToken t where t.expiresAt < :cutoff", "cutoff", graceCutoff);
         removed += delete("delete from EmailVerification v where v.codeExpiresAt < :cutoff", "cutoff", graceCutoff);
         removed += em.createQuery("delete from RateLimitCounter c where c.day < :yesterday and c.day <> :lifetime")

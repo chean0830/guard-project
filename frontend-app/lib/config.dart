@@ -10,6 +10,10 @@ class AppConfig {
   /// `--dart-define=TOSS_CLIENT_KEY=test_ck_...`로 넣는다. 없으면 결제 버튼이 안내만 띄운다.
   static const tossClientKey = String.fromEnvironment('TOSS_CLIENT_KEY');
 
+  /// 웹(Next.js) 주소. 소셜 로그인은 웹의 로그인 흐름을 그대로 쓴다 (구글·카카오·네이버에 등록된 돌아올 주소가 웹이라서).
+  /// 기본값 localhost:3000은 웹의 OAUTH_BASE_URL과 같아야 하며, 안드로이드에서는 `adb reverse tcp:3000 tcp:3000`이 필요하다.
+  static const webBaseUrl = String.fromEnvironment('WEB_BASE_URL', defaultValue: 'http://localhost:3000');
+
   static String get apiBaseUrl {
     if (_fromEnv.isNotEmpty) return _fromEnv;
     return Platform.isAndroid ? 'http://10.0.2.2:8080' : 'http://localhost:8080';

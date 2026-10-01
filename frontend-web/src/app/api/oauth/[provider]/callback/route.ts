@@ -4,6 +4,12 @@ import { getProvider } from '@/app/lib/oauth-providers'
 
 const BACKEND_URL = process.env.BACKEND_API_URL ?? 'http://localhost:8080'
 const INTERNAL_SYNC_SECRET = process.env.INTERNAL_SYNC_SECRET ?? ''
+/** 앱(Flutter)이 로그인 결과를 받는 주소. 앱의 AndroidManifest/Info.plist에 등록된 스킴과 같아야 한다. */
+const APP_CALLBACK_URL = 'projectguard://oauth-callback'
+
+function appRedirect(params: Record<string, string>) {
+  return NextResponse.redirect(`${APP_CALLBACK_URL}?${new URLSearchParams(params).toString()}`)
+}
 
 /**
  * 구글/카카오/네이버가 로그인 후 돌아오는 주소. 여기서만 code를 실제 토큰으로 교환하고
@@ -22,18 +28,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
   const cookieStore = await cookies()
   const expectedNonce = cookieStore.get('oauth_state')?.value
   cookieStore.delete('oauth_state')
+  // 앱에서 시작한 로그인이면 결과(성공·실패)를 쿠키 대신 앱 주소로 돌려보낸다.
+  const appChallenge = cookieStore.get('oauth_app_challenge')?.value
+  cookieStore.delete('oauth_app_challenge')
 
   const loginUrl = new URL('/login', request.url)
+  const fail = (message: string) => {
+    if (appChallenge) return appRedirect({ error: message })
+    loginUrl.searchParams.set('oauthError', message)
+    return NextResponse.redirect(loginUrl)
+  }
 
   if (!provider || providerError || !code || !state) {
-    loginUrl.searchParams.set('oauthError', '로그인이 취소되었거나 실패했습니다.')
-    return NextResponse.redirect(loginUrl)
+    return fail('로그인이 취소되었거나 실패했습니다.')
   }
 
   const [nonce, encodedRedirect] = state.split('.')
   if (!expectedNonce || nonce !== expectedNonce) {
-    loginUrl.searchParams.set('oauthError', '로그인 요청이 유효하지 않습니다. 다시 시도해주세요.')
-    return NextResponse.redirect(loginUrl)
+    return fail('로그인 요청이 유효하지 않습니다. 다시 시도해주세요.')
   }
   const decoded = encodedRedirect ? Buffer.from(encodedRedirect, 'base64url').toString() : '/'
   // 로그인 후 돌아갈 곳은 우리 사이트 안의 경로만 허용한다 (외부 사이트로 보내는 오픈 리다이렉트 방지).
@@ -44,8 +56,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
     const profile = await provider.fetchProfile(accessToken)
 
     if (!profile.email) {
-      loginUrl.searchParams.set('oauthError', '이메일 제공에 동의해야 로그인할 수 있습니다.')
-      return NextResponse.redirect(loginUrl)
+      return fail('이메일 제공에 동의해야 로그인할 수 있습니다.')
     }
 
     const syncResponse = await fetch(`${BACKEND_URL}/api/auth/oauth-sync`, {
@@ -62,11 +73,22 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
     if (!syncResponse.ok) {
       // 403(이용 정지)·400(이메일 미인증 등)은 백엔드가 사용자용 안내 문구를 주므로 그대로 보여준다.
       const userMessage = syncResponse.status === 403 || syncResponse.status === 400 ? await syncResponse.text() : ''
-      loginUrl.searchParams.set('oauthError', userMessage || '로그인 처리 중 오류가 발생했습니다.')
-      return NextResponse.redirect(loginUrl)
+      return fail(userMessage || '로그인 처리 중 오류가 발생했습니다.')
     }
 
     const { token, email } = (await syncResponse.json()) as { token: string; email: string }
+
+    if (appChallenge) {
+      // 세션 토큰을 앱 주소에 그대로 싣지 않는다 — 1회용 코드로 바꿔 보내고, 앱이 자기 verifier로 토큰을 찾아간다.
+      const codeResponse = await fetch(`${BACKEND_URL}/api/auth/app-login/codes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Internal-Secret': INTERNAL_SYNC_SECRET },
+        body: JSON.stringify({ sessionToken: token, codeChallenge: appChallenge }),
+      })
+      if (!codeResponse.ok) return fail('로그인 처리 중 오류가 발생했습니다.')
+      const { code } = (await codeResponse.json()) as { code: string }
+      return appRedirect({ code })
+    }
 
     const response = NextResponse.redirect(new URL(redirectTo, request.url))
     response.cookies.set('session', token, {
@@ -85,7 +107,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
     })
     return response
   } catch {
-    loginUrl.searchParams.set('oauthError', '로그인 처리 중 오류가 발생했습니다.')
-    return NextResponse.redirect(loginUrl)
+    return fail('로그인 처리 중 오류가 발생했습니다.')
   }
 }
