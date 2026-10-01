@@ -20,6 +20,9 @@ class AdminApi {
 
   Future<void> approveLawyer(int id) => _api.authedJson('POST', '/api/admin/lawyers/$id/approve');
 
+  /// 승인 취소 → 승인 대기로 돌아가고 그 변호사의 로그인이 모두 끊긴다.
+  Future<void> revokeLawyer(int id) => _api.authedJson('POST', '/api/admin/lawyers/$id/revoke');
+
   Future<void> rejectLawyer(int id, String reason) =>
       _api.authedJson('POST', '/api/admin/lawyers/$id/reject', body: {'reason': reason});
 

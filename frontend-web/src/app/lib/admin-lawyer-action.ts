@@ -66,6 +66,23 @@ export async function approveLawyerAction(lawyerId: number): Promise<AdminAction
   return { ok: true }
 }
 
+/** 승인 취소 → 승인 대기로 돌아가고 그 변호사의 로그인이 모두 끊긴다. */
+export async function revokeLawyerAction(lawyerId: number): Promise<AdminActionResult> {
+  let response: Response
+  try {
+    response = await fetch(`${BACKEND_URL}/api/admin/lawyers/${lawyerId}/revoke`, {
+      method: 'POST',
+      headers: await adminAuthHeader(),
+    })
+  } catch {
+    return { ok: false, message: '서버에 연결할 수 없습니다.' }
+  }
+  if (!response.ok) {
+    return { ok: false, message: await readErrorMessage(response) }
+  }
+  return { ok: true }
+}
+
 export async function rejectLawyerAction(lawyerId: number, reason: string): Promise<AdminActionResult> {
   let response: Response
   try {

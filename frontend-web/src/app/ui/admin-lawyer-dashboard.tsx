@@ -6,6 +6,7 @@ import {
   downloadLawyerDocumentAction,
   fetchLawyerApplicantsAction,
   rejectLawyerAction,
+  revokeLawyerAction,
   type LawyerApplicant,
 } from '@/app/lib/admin-lawyer-action'
 
@@ -67,6 +68,20 @@ export function AdminLawyerDashboard({ onUnauthorized }: { onUnauthorized: () =>
   async function handleTabChange(nextTab: (typeof TABS)[number]['value']) {
     setTab(nextTab)
     await loadTab(nextTab)
+  }
+
+  async function handleRevoke(lawyer: LawyerApplicant) {
+    const confirmed = window.confirm(
+      `정말로 ${lawyer.name} 변호사의 승인을 취소하시겠습니까?\n\n` +
+        '승인 대기로 돌아가고 바로 로그아웃되며, 다시 승인할 때까지 로그인과 새 상담 배정이 막힙니다.',
+    )
+    if (!confirmed) return
+    const result = await revokeLawyerAction(lawyer.id)
+    if (!result.ok) {
+      setError(result.message)
+      return
+    }
+    await loadTab(tab)
   }
 
   async function handleApprove(id: number) {
@@ -172,6 +187,16 @@ export function AdminLawyerDashboard({ onUnauthorized }: { onUnauthorized: () =>
               </div>
             )}
 
+            {lawyer.status === 'APPROVED' && (
+              <div className="mt-4">
+                <button
+                  onClick={() => handleRevoke(lawyer)}
+                  className="rounded-full border border-red-300 px-4 py-1.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
+                >
+                  승인 취소
+                </button>
+              </div>
+            )}
             {lawyer.status === 'PENDING' && (
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <button

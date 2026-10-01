@@ -136,6 +136,15 @@ public class Lawyer {
         this.reviewedAt = Instant.now();
     }
 
+    /** 승인 취소: 승인 대기로 되돌린다 (관리자가 다시 승인하거나 거절할 수 있게). 승인된 계정만 취소할 수 있다. */
+    public void revokeApproval() {
+        if (this.status != LawyerStatus.APPROVED) {
+            throw new IllegalStateException("승인된 변호사만 승인을 취소할 수 있습니다.");
+        }
+        this.status = LawyerStatus.PENDING;
+        this.reviewedAt = Instant.now();
+    }
+
     public void reject(String reason) {
         this.status = LawyerStatus.REJECTED;
         this.rejectionReason = reason;

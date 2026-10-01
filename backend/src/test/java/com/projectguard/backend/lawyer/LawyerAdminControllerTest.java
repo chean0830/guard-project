@@ -38,6 +38,9 @@ class LawyerAdminControllerTest {
     @MockitoBean
     private com.projectguard.backend.common.AccountMailService mailService;
 
+    @MockitoBean
+    private LawyerAuthTokenRepository tokenRepository;
+
     @Test
     void 비밀키가_없으면_목록조회는_401을_반환한다() throws Exception {
         mockMvc.perform(get("/api/admin/lawyers"))
@@ -97,5 +100,31 @@ class LawyerAdminControllerTest {
     void 비밀키가_틀리면_승인_요청도_401을_반환한다() throws Exception {
         mockMvc.perform(post("/api/admin/lawyers/1/approve").header("X-Admin-Secret", "wrong-secret"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void 승인을_취소하면_승인_대기로_돌리고_세션을_끊는다() throws Exception {
+        Lawyer lawyer = new Lawyer("revoke-me@example.com", "hash", "김변호", null, "12345");
+        lawyer.approve();
+        when(lawyerRepository.findById(3L)).thenReturn(Optional.of(lawyer));
+
+        mockMvc.perform(post("/api/admin/lawyers/3/revoke").header("X-Admin-Secret", "admin-secret"))
+                .andExpect(status().isOk());
+
+        org.junit.jupiter.api.Assertions.assertEquals(LawyerStatus.PENDING, lawyer.getStatus());
+        verify(lawyerRepository).save(lawyer);
+        verify(tokenRepository).deleteByLawyerId(3L);
+    }
+
+    @Test
+    void 승인되지_않은_변호사의_승인은_취소할_수_없다() throws Exception {
+        Lawyer lawyer = new Lawyer("pending@example.com", "hash", "김변호", null, "12345");
+        when(lawyerRepository.findById(4L)).thenReturn(Optional.of(lawyer));
+
+        mockMvc.perform(post("/api/admin/lawyers/4/revoke").header("X-Admin-Secret", "admin-secret"))
+                .andExpect(status().isConflict());
+
+        org.junit.jupiter.api.Assertions.assertEquals(LawyerStatus.PENDING, lawyer.getStatus());
+        org.mockito.Mockito.verifyNoInteractions(tokenRepository);
     }
 }

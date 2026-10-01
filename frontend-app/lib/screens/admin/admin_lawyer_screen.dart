@@ -99,6 +99,17 @@ class _AdminLawyerScreenState extends State<AdminLawyerScreen> {
     if (reason != null) await _run(lawyer.id, () => widget.adminApi.rejectLawyer(lawyer.id, reason), '거절했어요.');
   }
 
+  Future<void> _revoke(AdminLawyer lawyer) async {
+    final ok = await confirmDialog(context,
+        title: '승인 취소',
+        message: '정말로 ${lawyer.name} 변호사의 승인을 취소하시겠습니까?\n\n'
+            '승인 대기로 돌아가고 바로 로그아웃되며, 다시 승인할 때까지 로그인과 새 상담 배정이 막혀요.',
+        confirmLabel: '승인 취소');
+    if (ok) {
+      await _run(lawyer.id, () => widget.adminApi.revokeLawyer(lawyer.id), '승인을 취소했어요. 승인 대기 탭에서 다시 처리할 수 있어요.');
+    }
+  }
+
   /// 서류를 내려받아 기기의 기본 앱(PDF 뷰어·갤러리)으로 연다.
   Future<void> _openDocument(AdminLawyer lawyer, AdminLawyerDocument doc) async {
     try {
@@ -167,6 +178,10 @@ class _AdminLawyerScreenState extends State<AdminLawyerScreen> {
                 onPressed: () => _openDocument(lawyer, doc),
               ),
           ]),
+        ],
+        if (lawyer.status == 'APPROVED') ...[
+          const SizedBox(height: 12),
+          smallPill(busy ? '처리 중...' : '승인 취소', busy ? null : () => _revoke(lawyer), color: AppColors.red600),
         ],
         if (lawyer.status == 'PENDING') ...[
           const SizedBox(height: 12),

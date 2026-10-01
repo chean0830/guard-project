@@ -30,15 +30,18 @@ public class LawyerAdminController {
     private final LawyerRepository lawyerRepository;
     private final LawyerCredentialDocumentRepository documentRepository;
     private final AccountMailService mailService;
+    private final LawyerAuthTokenRepository tokenRepository;
 
     public LawyerAdminController(
             LawyerRepository lawyerRepository,
             LawyerCredentialDocumentRepository documentRepository,
-            AccountMailService mailService
+            AccountMailService mailService,
+            LawyerAuthTokenRepository tokenRepository
     ) {
         this.lawyerRepository = lawyerRepository;
         this.documentRepository = documentRepository;
         this.mailService = mailService;
+        this.tokenRepository = tokenRepository;
     }
 
     public record DocumentSummary(Long id, String fileName, String contentType) {
@@ -117,6 +120,23 @@ public class LawyerAdminController {
                         + "서류를 보완해 다시 신청하시거나, 문의가 있으면 회신해주세요.");
     }
 
+    /**
+     * 승인 취소: 승인 대기로 되돌리고 로그인 세션을 모두 끊는다. 이후 새 문의 배정·변호사 목록에서 빠지고 다시 로그인할 수 없다.
+     * 이미 진행 중인 상담 대화는 남는다 (회원 쪽 기록 보존).
+     */
+    @PostMapping("/{id}/revoke")
+    public void revoke(
+            @PathVariable Long id
+    ) {
+        Lawyer lawyer = findLawyer(id);
+        lawyer.revokeApproval();
+        lawyerRepository.save(lawyer);
+        tokenRepository.deleteByLawyerId(id);
+        mailService.send(lawyer.getEmail(), "변호사 승인이 취소되었습니다",
+                lawyer.getName() + " 변호사님, 관리자 검토에 따라 가입 승인이 취소되어 승인 대기 상태로 바뀌었습니다.\n\n"
+                        + "다시 승인되기 전까지는 로그인과 새 상담 배정이 제한됩니다. 문의가 있으면 회신해주세요.");
+    }
+
     private Lawyer findLawyer(Long id) {
         return lawyerRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("가입 신청을 찾을 수 없습니다."));
@@ -140,6 +160,12 @@ public class LawyerAdminController {
     }
 
 
+
+    @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public String handleConflict(IllegalStateException e) {
+        return e.getMessage();
+    }
 
     @ExceptionHandler(NoSuchElementException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
