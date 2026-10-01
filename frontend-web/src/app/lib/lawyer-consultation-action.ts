@@ -126,6 +126,22 @@ export async function getLawyerConsultationSocketTicketAction(id: number): Promi
   }
 }
 
+/** 변호사 문의함 실시간 알림(/ws/lawyer-inbox) 입장권. */
+export async function getLawyerInboxSocketTicketAction(): Promise<string | null> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/lawyer/inbox/socket-ticket`, {
+      method: 'POST',
+      headers: await authHeader(),
+      cache: 'no-store',
+    })
+    if (!response.ok) return null
+    const data = (await response.json()) as { ticket: string }
+    return data.ticket
+  } catch {
+    return null
+  }
+}
+
 export async function blockLawyerConsultationCounterpartAction(id: number): Promise<BlockResult> {
   let response: Response
   try {

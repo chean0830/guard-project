@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { listLawyerConsultationsAction } from '@/app/lib/lawyer-consultation-action'
 import { LawyerConsultationList } from '@/app/ui/lawyer-consultation-list'
+import { LawyerInboxLive } from '@/app/ui/lawyer-inbox-live'
 
 export default async function LawyerConsultationsPage() {
   const consultations = await listLawyerConsultationsAction()
@@ -13,6 +14,7 @@ export default async function LawyerConsultationsPage() {
       <h1 className="text-2xl font-bold text-zinc-950 dark:text-zinc-50">문의함</h1>
       <p className="mt-2 text-sm text-zinc-500">회원이 남긴 상담 문의 목록이에요.</p>
       <LawyerConsultationList consultations={consultations} />
+      <LawyerInboxLive />
     </div>
   )
 }
