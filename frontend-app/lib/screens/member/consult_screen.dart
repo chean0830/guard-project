@@ -3,16 +3,20 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../../api/live_socket.dart';
 import '../../api/member_api.dart';
+import '../../api/payment_api.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
 import '../consultation/consultation_thread_screen.dart';
+import '../payment/choose_lawyer_screen.dart';
+import '../payment/payment_history_screen.dart';
 
 /// 회원 변호사 상담 (웹 /consult): 새 문의 시작 + 내 문의 내역(실시간 갱신).
 class ConsultScreen extends StatefulWidget {
   final MemberApi memberApi;
+  final PaymentApi paymentApi;
   final VoidCallback onLoggedOut;
 
-  const ConsultScreen({super.key, required this.memberApi, required this.onLoggedOut});
+  const ConsultScreen({super.key, required this.memberApi, required this.paymentApi, required this.onLoggedOut});
 
   @override
   State<ConsultScreen> createState() => _ConsultScreenState();
@@ -126,6 +130,11 @@ class _ConsultScreenState extends State<ConsultScreen> {
     _load();
   }
 
+  Future<void> _push(Widget screen) async {
+    await Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+    _load();
+  }
+
   void _toast(String text) {
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
   }
@@ -138,7 +147,13 @@ class _ConsultScreenState extends State<ConsultScreen> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 28, 16, 32),
         children: [
-          const Text('변호사 상담', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700)),
+          Row(children: [
+            const Expanded(child: Text('변호사 상담', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700))),
+            TextButton(
+              onPressed: () => _push(PaymentHistoryScreen(paymentApi: widget.paymentApi)),
+              child: const Text('결제 내역', style: TextStyle(color: AppColors.zinc500, fontSize: 13)),
+            ),
+          ]),
           const SizedBox(height: 6),
           Text(keepAll('문의를 남기면 승인된 변호사 중 한 분과 무작위로 연결돼요. 실제 변호사가 직접 확인 후 답변드립니다.'),
               style: const TextStyle(fontSize: 14, color: AppColors.zinc500, height: 1.5)),
@@ -166,6 +181,34 @@ class _ConsultScreenState extends State<ConsultScreen> {
               const SizedBox(height: 14),
               PillButton(label: _sending ? '등록 중...' : '문의 보내기', loading: _sending, onPressed: _start),
             ]),
+          ),
+          const SizedBox(height: 12),
+          Material(
+            color: AppColors.orange50,
+            shape: RoundedRectangleBorder(
+              side: const BorderSide(color: AppColors.orange100),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => _push(ChooseLawyerScreen(
+                  paymentApi: widget.paymentApi, memberApi: widget.memberApi, onLoggedOut: widget.onLoggedOut)),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(children: [
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(keepAll('랜덤 변호사 말고 내가 원하는 변호사와 매칭하고 싶어요'),
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.orange700)),
+                      const SizedBox(height: 2),
+                      const Text('입점 변호사 목록을 보고 직접 골라요 · 1회 2,900원',
+                          style: TextStyle(fontSize: 12, color: AppColors.zinc500)),
+                    ]),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.orange600),
+                ]),
+              ),
+            ),
           ),
           const SizedBox(height: 32),
           Row(children: [

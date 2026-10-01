@@ -6,6 +6,10 @@ import 'dart:io';
 class AppConfig {
   static const _fromEnv = String.fromEnvironment('API_BASE_URL');
 
+  /// 토스페이먼츠 클라이언트 키 (공개 키, 웹 NEXT_PUBLIC_TOSS_CLIENT_KEY와 같은 값).
+  /// `--dart-define=TOSS_CLIENT_KEY=test_ck_...`로 넣는다. 없으면 결제 버튼이 안내만 띄운다.
+  static const tossClientKey = String.fromEnvironment('TOSS_CLIENT_KEY');
+
   static String get apiBaseUrl {
     if (_fromEnv.isNotEmpty) return _fromEnv;
     return Platform.isAndroid ? 'http://10.0.2.2:8080' : 'http://localhost:8080';

@@ -4,8 +4,10 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../api/api_client.dart';
+import '../api/payment_api.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import 'payment/toss_payment_screen.dart';
 import 'result_screen.dart';
 
 const _propertyTypes = {
@@ -140,7 +142,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
       if (e.loginRequired) {
         widget.onLoggedOut();
       } else if (e.paymentRequired) {
-        setState(() => _error = '${e.message}\n앱 결제는 준비 중이에요. 웹에서 분석 이용권을 구매한 뒤 다시 시도해주세요.');
+        _offerAnalysisPayment(e.message);
       } else {
         setState(() => _error = e.message);
       }
@@ -149,6 +151,30 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  /// 무료 분석 횟수를 다 쓰면 990원 분석 이용권 결제를 권하고, 결제되면 같은 내용으로 바로 다시 분석한다.
+  Future<void> _offerAnalysisPayment(String message) async {
+    final pay = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: const Text('무료 분석 횟수를 모두 사용했어요', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        content: Text(keepAll('$message\n\n분석 이용권(1회 990원)을 결제하면 바로 이어서 분석해드려요.'),
+            style: const TextStyle(fontSize: 14, color: AppColors.zinc600, height: 1.5)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('나중에')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.orange500),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('990원 결제하고 분석'),
+          ),
+        ],
+      ),
+    );
+    if (pay != true || !mounted) return;
+    final outcome = await TossPaymentScreen.open(context, PaymentApi(widget.api), 'ANALYSIS');
+    if (outcome == PaymentOutcome.paid && mounted) _submit();
   }
 
   Widget _dropdown(String value, Map<String, String> options, ValueChanged<String> onChanged) {

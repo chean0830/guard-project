@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
 import '../../api/member_api.dart';
+import '../../api/payment_api.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
 import '../analyze_screen.dart';
@@ -22,6 +23,7 @@ class MemberHomeScreen extends StatefulWidget {
 
 class _MemberHomeScreenState extends State<MemberHomeScreen> {
   late final MemberApi _memberApi = MemberApi(widget.api);
+  late final PaymentApi _paymentApi = PaymentApi(widget.api);
   int _tab = 0;
 
   Future<void> _logout() async {
@@ -52,7 +54,7 @@ class _MemberHomeScreenState extends State<MemberHomeScreen> {
             onLoggedOut: widget.onLoggedOut,
             onOpenConsult: () => setState(() => _tab = 1),
           ),
-          ConsultScreen(memberApi: _memberApi, onLoggedOut: widget.onLoggedOut),
+          ConsultScreen(memberApi: _memberApi, paymentApi: _paymentApi, onLoggedOut: widget.onLoggedOut),
           MemberSettingsScreen(api: widget.api, memberApi: _memberApi, onLoggedOut: widget.onLoggedOut),
         ]),
       ),
