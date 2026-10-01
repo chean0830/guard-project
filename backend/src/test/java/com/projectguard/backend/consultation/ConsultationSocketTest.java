@@ -54,6 +54,9 @@ class ConsultationSocketTest {
     @Autowired
     private LawyerRepository lawyerRepository;
 
+    @Autowired
+    private InboxSocketHandler inboxSocketHandler;
+
     private Long userId;
     private Long lawyerId;
     private Long consultationId;
@@ -74,6 +77,16 @@ class ConsultationSocketTest {
         String token = authService.signup("ws-user-" + suffix + "@example.com", "password123").token();
         userId = authService.validate(token).orElseThrow().getId();
         consultationId = consultationService.startConsultation(userId, "첫 문의").getId();
+    }
+
+    private void awaitInboxRegistered(SenderType ownerType, Long ownerId) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + 3_000;
+        while (!inboxSocketHandler.hasSession(ownerType, ownerId)) {
+            if (System.currentTimeMillis() > deadline) {
+                throw new AssertionError("목록 소켓이 3초 안에 서버에 등록되지 않았다");
+            }
+            Thread.sleep(20);
+        }
     }
 
     private record Connection(WebSocketSession session, BlockingQueue<String> received) {
@@ -152,6 +165,9 @@ class ConsultationSocketTest {
     @Test
     void 변호사_목록_소켓은_새_문의와_새_메시지를_즉시_알린다() throws Exception {
         Connection inbox = connect("/ws/lawyer-inbox", ticketService.issueForInbox(SenderType.LAWYER, lawyerId), "http://localhost:3000");
+        // 클라이언트 연결 완료와 서버의 세션 등록(afterConnectionEstablished) 사이에 틈이 있어, 등록을 기다린 뒤 알림을 만든다.
+        // (PC가 바쁠 때 이 틈에 알림이 나가 사라져 간헐적으로 실패했다)
+        awaitInboxRegistered(SenderType.LAWYER, lawyerId);
 
         Long newConsultation = consultationService.startConsultation(userId, "새 문의").getId();
         String created = inbox.received().poll(3, TimeUnit.SECONDS);
@@ -174,6 +190,7 @@ class ConsultationSocketTest {
                 "password123", "이변호", null, "67890",
                 List.of(new MockMultipartFile("documents", "license.pdf", "application/pdf", "%PDF-1.4 dummy".getBytes())));
         Connection otherInbox = connect("/ws/lawyer-inbox", ticketService.issueForInbox(SenderType.LAWYER, other.getId()), "http://localhost:3000");
+        awaitInboxRegistered(SenderType.LAWYER, other.getId()); // 등록 전이라 못 받은 것과 구분하려고 기다린다.
 
         consultationService.postMessage(consultationId, SenderType.USER, userId, "내 변호사에게만");
 
@@ -193,6 +210,7 @@ class ConsultationSocketTest {
     @Test
     void 회원_목록_소켓은_변호사가_답장하면_즉시_알린다() throws Exception {
         Connection inbox = connect("/ws/user-inbox", ticketService.issueForInbox(SenderType.USER, userId), "http://localhost:3000");
+        awaitInboxRegistered(SenderType.USER, userId);
 
         consultationService.postMessage(consultationId, SenderType.LAWYER, lawyerId, "답변드립니다");
 

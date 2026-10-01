@@ -65,6 +65,12 @@ public class InboxSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    /** 이 계정의 목록 소켓이 서버에 등록됐는지 (테스트에서 연결 직후 경쟁 상태를 피하는 용도). */
+    boolean hasSession(SenderType ownerType, Long ownerId) {
+        Set<WebSocketSession> sessions = sessionsByOwner.get(key(ownerType, ownerId));
+        return sessions != null && !sessions.isEmpty();
+    }
+
     @EventListener
     public void onInboxChanged(InboxChangedEvent event) {
         Set<WebSocketSession> sessions = sessionsByOwner.get(key(event.ownerType(), event.ownerId()));
