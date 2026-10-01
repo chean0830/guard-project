@@ -7,9 +7,10 @@ import 'package:flutter/foundation.dart';
 
 import 'api_client.dart';
 
-/// 푸시 알림을 눌렀을 때 열 상담 대화방.
+/// 푸시 알림을 눌렀을 때 열 화면: 상담 대화방, 또는 변호사의 관리자 메시지 알림함.
 class PushTarget {
-  final int consultationId;
+  /// 관리자 메시지면 null.
+  final int? consultationId;
   final String counterpartName;
 
   /// 받는 사람 계정 종류 (USER 또는 LAWYER). 로그인한 계정과 다르면 열지 않는다.
@@ -17,14 +18,20 @@ class PushTarget {
 
   PushTarget({required this.consultationId, required this.counterpartName, required this.recipientType});
 
+  bool get isAdminMessage => consultationId == null;
+
   static PushTarget? fromMessage(RemoteMessage message) {
     final data = message.data;
+    final recipientType = data['recipientType'] as String? ?? '';
+    if (data['type'] == 'ADMIN_MESSAGE') {
+      return PushTarget(consultationId: null, counterpartName: '관리자', recipientType: recipientType);
+    }
     final id = int.tryParse('${data['consultationId']}');
     if (data['type'] != 'CONSULTATION_MESSAGE' || id == null) return null;
     return PushTarget(
       consultationId: id,
       counterpartName: data['counterpartName'] as String? ?? '',
-      recipientType: data['recipientType'] as String? ?? '',
+      recipientType: recipientType,
     );
   }
 }

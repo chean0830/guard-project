@@ -4,6 +4,7 @@ import '../../api/admin_api.dart';
 import '../../api/api_client.dart';
 import '../../theme.dart';
 import 'admin_common.dart';
+import 'admin_lawyer_message_screen.dart';
 
 /// 회원 관리 (웹 관리자 > 회원 관리): 회원·변호사 검색, 이용 정지·해제. 20명씩 페이지로 본다.
 class AdminMemberScreen extends StatefulWidget {
@@ -109,7 +110,7 @@ class _AdminMemberScreenState extends State<AdminMemberScreen> {
     return AdminListView(
       title: '회원 관리',
       description: data == null ? null : '${_type == 'USER' ? '회원' : '변호사'} ${data.totalElements}명',
-      filters: Column(children: [
+      filters: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         FilterChips<String>(
           options: const [('USER', '회원'), ('LAWYER', '변호사')],
           selected: _type,
@@ -156,6 +157,17 @@ class _AdminMemberScreenState extends State<AdminMemberScreen> {
     );
   }
 
+  void _openMessages(AdminMember member) {
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => AdminLawyerMessageScreen(
+        adminApi: widget.adminApi,
+        lawyerId: member.id,
+        lawyerName: member.name?.isNotEmpty == true ? member.name! : member.email,
+        onLoggedOut: widget.onLoggedOut,
+      ),
+    ));
+  }
+
   Widget _tile(AdminMember member) {
     final busy = _busyId == member.id;
     return AdminCard(
@@ -180,9 +192,15 @@ class _AdminMemberScreenState extends State<AdminMemberScreen> {
           ]),
         ),
         const SizedBox(width: 8),
-        member.blocked
-            ? smallPill(busy ? '...' : '정지 해제', busy ? null : () => _setBlocked(member, false))
-            : smallPill(busy ? '...' : '이용 정지', busy ? null : () => _setBlocked(member, true), color: AppColors.red600),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          member.blocked
+              ? smallPill(busy ? '...' : '정지 해제', busy ? null : () => _setBlocked(member, false))
+              : smallPill(busy ? '...' : '이용 정지', busy ? null : () => _setBlocked(member, true), color: AppColors.red600),
+          if (_type == 'LAWYER') ...[
+            const SizedBox(height: 6),
+            smallPill('메시지', () => _openMessages(member), color: AppColors.orange600),
+          ],
+        ]),
       ]),
     );
   }

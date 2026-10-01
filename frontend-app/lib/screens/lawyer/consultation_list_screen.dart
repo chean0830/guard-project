@@ -8,6 +8,7 @@ import '../../api/lawyer_api.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
 import '../consultation/consultation_thread_screen.dart';
+import 'lawyer_admin_messages_screen.dart';
 import 'lawyer_settings_screen.dart';
 
 /// 변호사 로그인 후 첫 화면: 배정된 상담 문의 목록.
@@ -26,6 +27,9 @@ class _ConsultationListScreenState extends State<ConsultationListScreen> {
   late final LawyerApi _lawyerApi = LawyerApi(widget.api);
   List<ConsultationSummary>? _items;
   String? _error;
+
+  /// 관리자 메시지 중 안 읽은 수 (앱바 알림함 아이콘의 뱃지).
+  int _adminUnread = 0;
 
   WebSocket? _socket;
   Timer? _reconnect;
@@ -86,6 +90,7 @@ class _ConsultationListScreenState extends State<ConsultationListScreen> {
   }
 
   Future<void> _load() async {
+    _loadAdminUnread();
     try {
       final items = await _lawyerApi.listConsultations();
       if (mounted) {
@@ -100,6 +105,22 @@ class _ConsultationListScreenState extends State<ConsultationListScreen> {
     } catch (e, stack) {
       if (mounted) setState(() => _error = describeError(e, stack));
     }
+  }
+
+  Future<void> _loadAdminUnread() async {
+    try {
+      final count = await _lawyerApi.adminMessageUnreadCount();
+      if (mounted) setState(() => _adminUnread = count);
+    } catch (_) {
+      // 뱃지는 부가 정보라 실패해도 목록은 그대로 보여준다.
+    }
+  }
+
+  Future<void> _openAdminMessages() async {
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => LawyerAdminMessagesScreen(lawyerApi: _lawyerApi, onLoggedOut: widget.onLoggedOut),
+    ));
+    _loadAdminUnread();
   }
 
   Future<void> _open(ConsultationSummary item) async {
@@ -129,6 +150,16 @@ class _ConsultationListScreenState extends State<ConsultationListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: brandAppBar(actions: [
+        IconButton(
+          tooltip: '관리자 메시지',
+          onPressed: _openAdminMessages,
+          icon: Badge(
+            isLabelVisible: _adminUnread > 0,
+            label: Text('$_adminUnread'),
+            backgroundColor: AppColors.orange500,
+            child: const Icon(Icons.mail_outline, color: AppColors.zinc600),
+          ),
+        ),
         IconButton(
           tooltip: '설정',
           icon: const Icon(Icons.settings_outlined, color: AppColors.zinc600),

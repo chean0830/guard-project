@@ -26,6 +26,18 @@ class AdminApi {
   Future<void> rejectLawyer(int id, String reason) =>
       _api.authedJson('POST', '/api/admin/lawyers/$id/reject', body: {'reason': reason});
 
+  // ── 변호사에게 1:1 메시지 ──
+
+  /// 이 변호사에게 보낸 메시지 (최신순, 읽음 여부 포함).
+  Future<List<AdminMessageItem>> lawyerMessages(int lawyerId) async {
+    final list = await _api.authedJson('GET', '/api/admin/lawyers/$lawyerId/messages') as List;
+    return list.map((e) => AdminMessageItem.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<AdminMessageItem> sendLawyerMessage(int lawyerId, String content) async => AdminMessageItem.fromJson(
+      await _api.authedJson('POST', '/api/admin/lawyers/$lawyerId/messages', body: {'content': content})
+          as Map<String, dynamic>);
+
   // ── 신고 ──
 
   /// status: PENDING(처리 대기) / ACTIONED(정지 처리됨) / DISMISSED(기각됨)
@@ -254,5 +266,24 @@ class AdminPayment {
         payment: PaymentHistoryItem.fromJson(json['payment'] as Map<String, dynamic>),
         userId: (json['userId'] as num).toInt(),
         userEmail: json['userEmail'] as String,
+      );
+}
+
+/// 관리자 → 변호사 1:1 메시지 (관리자 화면의 보낸 기록, 변호사 알림함 공용).
+class AdminMessageItem {
+  final int id;
+  final String content;
+  final DateTime? createdAt;
+
+  /// 변호사가 읽은 시각. null이면 안 읽음.
+  final DateTime? readAt;
+
+  AdminMessageItem({required this.id, required this.content, this.createdAt, this.readAt});
+
+  factory AdminMessageItem.fromJson(Map<String, dynamic> json) => AdminMessageItem(
+        id: (json['id'] as num).toInt(),
+        content: json['content'] as String,
+        createdAt: _date(json['createdAt']),
+        readAt: _date(json['readAt']),
       );
 }

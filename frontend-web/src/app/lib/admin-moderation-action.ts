@@ -138,3 +138,14 @@ export async function approveRefundAction(orderId: string) {
 export async function rejectRefundAction(orderId: string, reason: string) {
   return adminFetch<null>(`/payments/${encodeURIComponent(orderId)}/refund/reject`, { method: 'POST', body: { reason } })
 }
+
+/** 관리자 → 변호사 1:1 메시지 (변호사는 알림함에서 읽기만 한다). readAt이 null이면 안 읽음. */
+export type AdminLawyerMessage = { id: number; content: string; createdAt: string; readAt: string | null }
+
+export async function fetchLawyerMessagesAction(lawyerId: number) {
+  return adminFetch<AdminLawyerMessage[]>(`/lawyers/${lawyerId}/messages`)
+}
+
+export async function sendLawyerMessageAction(lawyerId: number, content: string) {
+  return adminFetch<AdminLawyerMessage>(`/lawyers/${lawyerId}/messages`, { method: 'POST', body: { content } })
+}

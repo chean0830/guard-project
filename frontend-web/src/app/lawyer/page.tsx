@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getLawyerAdminMessageUnreadCountAction } from '@/app/lib/lawyer-admin-message-action'
 import { getLawyerSessionName } from '@/app/lib/lawyer-auth-action'
 import { listLawyerConsultationsAction } from '@/app/lib/lawyer-consultation-action'
 
@@ -6,6 +7,7 @@ export default async function LawyerDashboardPage() {
   const name = await getLawyerSessionName()
   const consultations = await listLawyerConsultationsAction()
   const unreadTotal = consultations.reduce((sum, c) => sum + c.unreadCount, 0)
+  const adminUnread = await getLawyerAdminMessageUnreadCountAction()
 
   return (
     <div className="mx-auto flex w-full max-w-sm flex-1 flex-col items-center px-4 py-16 text-center">
@@ -22,6 +24,15 @@ export default async function LawyerDashboardPage() {
           <span className="font-semibold text-zinc-950 dark:text-zinc-50">문의함</span>
           {unreadTotal > 0 && (
             <span className="rounded-full bg-orange-500 px-2.5 py-0.5 text-xs font-bold text-white">{unreadTotal}</span>
+          )}
+        </Link>
+        <Link
+          href="/lawyer/messages"
+          className="flex items-center justify-between rounded-xl border border-zinc-200 px-5 py-4 text-left transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
+        >
+          <span className="font-semibold text-zinc-950 dark:text-zinc-50">관리자 메시지</span>
+          {adminUnread > 0 && (
+            <span className="rounded-full bg-orange-500 px-2.5 py-0.5 text-xs font-bold text-white">{adminUnread}</span>
           )}
         </Link>
         <Link

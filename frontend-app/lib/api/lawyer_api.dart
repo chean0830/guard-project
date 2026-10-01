@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'admin_api.dart' show AdminMessageItem;
 import 'api_client.dart';
 import 'consultation_api.dart';
 
+export 'admin_api.dart' show AdminMessageItem;
 export 'consultation_api.dart';
 
 /// 변호사 전용 API: 문의함 목록·실시간 알림, 차단 관리, 프로필 (`/api/lawyer/...`).
@@ -20,6 +22,20 @@ class LawyerApi {
     final list = await _api.authedJson('GET', '/api/lawyer/consultations') as List;
     return list.map((e) => ConsultationSummary.fromJson(e as Map<String, dynamic>)).toList();
   }
+
+  /// 관리자가 보낸 메시지 알림함 (최신순).
+  Future<List<AdminMessageItem>> adminMessages() async {
+    final list = await _api.authedJson('GET', '/api/lawyer/admin-messages') as List;
+    return list.map((e) => AdminMessageItem.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  Future<int> adminMessageUnreadCount() async {
+    final res = await _api.authedJson('GET', '/api/lawyer/admin-messages/unread-count') as Map<String, dynamic>;
+    return (res['unreadCount'] as num).toInt();
+  }
+
+  /// 알림함을 열면 안 읽은 메시지를 모두 읽음 처리한다.
+  Future<void> markAdminMessagesRead() => _api.authedJson('POST', '/api/lawyer/admin-messages/read');
 
   Future<List<BlockedEntry>> listBlocks() async {
     final list = await _api.authedJson('GET', '/api/lawyer/blocks') as List;

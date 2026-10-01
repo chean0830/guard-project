@@ -8,6 +8,7 @@ import {
   type AdminUserMember,
   type PartyType,
 } from '@/app/lib/admin-moderation-action'
+import { AdminLawyerMessages } from '@/app/ui/admin-lawyer-messages'
 
 type Member = {
   id: number
@@ -56,6 +57,7 @@ export function AdminMemberPanel({ onUnauthorized }: { onUnauthorized: () => voi
   const [error, setError] = useState<string | null>(null)
   const [blockingId, setBlockingId] = useState<number | null>(null)
   const [blockReason, setBlockReason] = useState('')
+  const [messagingId, setMessagingId] = useState<number | null>(null)
 
   async function load(nextType: PartyType, nextPage = 0, q = query) {
     setLoading(true)
@@ -82,6 +84,7 @@ export function AdminMemberPanel({ onUnauthorized }: { onUnauthorized: () => voi
   async function handleTypeChange(nextType: PartyType) {
     setType(nextType)
     setBlockingId(null)
+    setMessagingId(null)
     setQuery('')
     await load(nextType, 0, '')
   }
@@ -202,6 +205,17 @@ export function AdminMemberPanel({ onUnauthorized }: { onUnauthorized: () => voi
               >
                 이용 정지
               </button>
+            )}
+            {type === 'LAWYER' && (
+              <button
+                onClick={() => setMessagingId(messagingId === member.id ? null : member.id)}
+                className="rounded-full border border-orange-300 px-4 py-1.5 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50 dark:border-orange-900 dark:text-orange-400 dark:hover:bg-orange-950"
+              >
+                {messagingId === member.id ? '메시지 닫기' : '메시지'}
+              </button>
+            )}
+            {type === 'LAWYER' && messagingId === member.id && (
+              <AdminLawyerMessages lawyerId={member.id} lawyerName={member.name ?? member.email} />
             )}
           </li>
         ))}

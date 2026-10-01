@@ -95,19 +95,30 @@ public class PushNotificationService {
         sendToApp(SenderType.LAWYER, lawyerId, consultationId, previewText, senderName);
     }
 
+    /** 관리자가 보낸 1:1 메시지를 변호사 앱에 알린다. 알림을 누르면 관리자 메시지 알림함이 열린다. */
+    public void notifyLawyerAdminMessage(Long lawyerId, String content) {
+        sendToApp(SenderType.LAWYER, lawyerId, "관리자 메시지", content, Map.of(
+                "type", "ADMIN_MESSAGE",
+                "recipientType", SenderType.LAWYER.name()
+        ));
+    }
+
     private void sendToApp(SenderType ownerType, Long ownerId, Long consultationId, String previewText, String senderName) {
-        if (!fcmClient.isEnabled()) {
-            return;
-        }
-        String body = previewText.length() > 120 ? previewText.substring(0, 120) + "…" : previewText;
-        Map<String, String> data = Map.of(
+        sendToApp(ownerType, ownerId, senderName, previewText, Map.of(
                 "type", "CONSULTATION_MESSAGE",
                 "consultationId", String.valueOf(consultationId),
                 "counterpartName", senderName,
                 "recipientType", ownerType.name()
-        );
+        ));
+    }
+
+    private void sendToApp(SenderType ownerType, Long ownerId, String title, String text, Map<String, String> data) {
+        if (!fcmClient.isEnabled()) {
+            return;
+        }
+        String body = text.length() > 120 ? text.substring(0, 120) + "…" : text;
         for (DeviceToken device : deviceTokenRepository.findByOwnerTypeAndOwnerId(ownerType, ownerId)) {
-            if (fcmClient.send(device.getToken(), senderName, body, data) == FcmClient.Result.INVALID_TOKEN) {
+            if (fcmClient.send(device.getToken(), title, body, data) == FcmClient.Result.INVALID_TOKEN) {
                 deviceTokenRepository.deleteByToken(device.getToken());
             }
         }

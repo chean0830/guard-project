@@ -3,12 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'api/api_client.dart';
-import 'api/consultation_api.dart';
+import 'api/lawyer_api.dart';
 import 'api/push_service.dart';
 import 'screens/admin/admin_home_screen.dart';
 import 'screens/consultation/consultation_thread_screen.dart';
 import 'screens/landing_screen.dart';
 import 'screens/lawyer/consultation_list_screen.dart';
+import 'screens/lawyer/lawyer_admin_messages_screen.dart';
 import 'screens/lawyer_login_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/member/member_home_screen.dart';
@@ -90,10 +91,17 @@ class _AuthGateState extends State<AuthGate> {
     return session;
   }
 
-  /// 알림을 눌렀을 때 그 상담 대화방을 연다. 지금 로그인한 계정이 받는 사람일 때만 연다.
+  /// 알림을 눌렀을 때 그 상담 대화방(관리자 메시지면 변호사 알림함)을 연다. 지금 로그인한 계정이 받는 사람일 때만 연다.
   void _openPushTarget(PushTarget target) {
     final session = _current;
     if (session == null || !mounted) return;
+    if (target.isAdminMessage) {
+      if (session.role != AccountRole.lawyer || target.recipientType != 'LAWYER') return;
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => LawyerAdminMessagesScreen(lawyerApi: LawyerApi(widget.api), onLoggedOut: _onAuthenticated),
+      ));
+      return;
+    }
     final ConsultationChatApi chat;
     if (session.role == AccountRole.user && target.recipientType == 'USER') {
       chat = ConsultationChatApi.member(widget.api);
@@ -106,7 +114,7 @@ class _AuthGateState extends State<AuthGate> {
     Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => ConsultationThreadScreen(
         chat: chat,
-        consultationId: target.consultationId,
+        consultationId: target.consultationId!,
         counterpartName: target.counterpartName,
         onLoggedOut: _onAuthenticated,
       ),
