@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'api/api_client.dart';
-import 'screens/account_home_screen.dart';
+import 'screens/admin/admin_home_screen.dart';
 import 'screens/landing_screen.dart';
 import 'screens/lawyer/consultation_list_screen.dart';
 import 'screens/lawyer_login_screen.dart';
@@ -31,7 +31,7 @@ class ProjectGuardApp extends StatelessWidget {
 }
 
 /// 로그인 전에는 서비스 소개(랜딩) → 로그인/회원가입 순서로 보내고,
-/// 로그인되어 있으면 계정 종류에 맞는 첫 화면(회원: 분석·상담 탭, 변호사: 상담 문의, 관리자: 계정 홈)을 보여준다.
+/// 로그인되어 있으면 계정 종류에 맞는 첫 화면(회원: 분석·상담 탭, 변호사: 상담 문의, 관리자: 관리 콘솔)을 보여준다.
 class AuthGate extends StatefulWidget {
   final ApiClient api;
 
@@ -108,7 +108,7 @@ class _AuthGateState extends State<AuthGate> {
           return ConsultationListScreen(api: widget.api, session: session, onLoggedOut: _refresh);
         }
         if (session.role == AccountRole.admin) {
-          return AccountHomeScreen(api: widget.api, session: session, onLoggedOut: _refresh);
+          return AdminHomeScreen(api: widget.api, session: session, onLoggedOut: _refresh);
         }
         return MemberHomeScreen(api: widget.api, session: session, onLoggedOut: _refresh);
       },

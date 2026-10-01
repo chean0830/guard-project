@@ -251,6 +251,14 @@ class ApiClient {
     return text.trim().isEmpty ? null : jsonDecode(text);
   }
 
+  /// 로그인 토큰을 붙여 파일(서류 등)을 내려받는다.
+  Future<({List<int> bytes, String contentType})> authedBytes(String path) async {
+    final res = await _http.get(_uri(path), headers: await _authHeaders());
+    if (res.statusCode == 401) await _clearToken();
+    _throwIfFailed(res);
+    return (bytes: res.bodyBytes, contentType: res.headers['content-type'] ?? 'application/octet-stream');
+  }
+
   /// 실시간 알림 소켓 주소 (http → ws, https → wss).
   Uri webSocketUri(String path, Map<String, String> query) {
     final base = Uri.parse(AppConfig.apiBaseUrl);
