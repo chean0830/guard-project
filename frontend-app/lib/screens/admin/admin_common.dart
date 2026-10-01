@@ -145,28 +145,8 @@ Future<bool> confirmDialog(BuildContext context,
 
 /// 사유 입력 대화상자. 취소하면 null, 확인하면 입력한 글(비어 있을 수 있음).
 Future<String?> reasonDialog(BuildContext context,
-    {required String title, required String hint, required String confirmLabel, Color color = AppColors.red600}) async {
-  final controller = TextEditingController();
-  final ok = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: Colors.white,
-      title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-      content: TextField(controller: controller, minLines: 2, maxLines: 4, decoration: InputDecoration(hintText: hint)),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
-        FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: color),
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(confirmLabel),
-        ),
-      ],
-    ),
-  );
-  final text = controller.text.trim();
-  controller.dispose();
-  return ok == true ? text : null;
-}
+        {required String title, required String hint, required String confirmLabel, Color color = AppColors.red600}) =>
+    showTextInputDialog(context, title: title, hint: hint, confirmLabel: confirmLabel, color: color);
 
 /// 목록 화면 공통 뼈대: 제목·설명·필터 + 불러오는 중/오류/빈 목록 처리 + 당겨서 새로고침.
 class AdminListView extends StatelessWidget {

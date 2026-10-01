@@ -202,3 +202,82 @@ class LiveIndicator extends StatelessWidget {
     ]);
   }
 }
+
+/// 글 입력 대화상자. 취소하면 null, 확인하면 입력한 글(앞뒤 공백 제거, 비어 있을 수 있음).
+///
+/// 입력칸 컨트롤러는 대화상자 위젯이 직접 가지고 있다가 대화상자가 완전히 사라질 때 정리한다 — 부르는 쪽에서 showDialog가
+/// 끝나자마자 dispose하면, 닫히는 애니메이션 동안 입력칸이 다시 그려지며 "disposed controller" 오류(빨간 화면)가 난다.
+Future<String?> showTextInputDialog(
+  BuildContext context, {
+  required String title,
+  required String hint,
+  required String confirmLabel,
+  Color color = AppColors.red600,
+  int minLines = 2,
+  int maxLines = 4,
+}) =>
+    showDialog<String>(
+      context: context,
+      builder: (_) => _TextInputDialog(
+        title: title,
+        hint: hint,
+        confirmLabel: confirmLabel,
+        color: color,
+        minLines: minLines,
+        maxLines: maxLines,
+      ),
+    );
+
+class _TextInputDialog extends StatefulWidget {
+  final String title;
+  final String hint;
+  final String confirmLabel;
+  final Color color;
+  final int minLines;
+  final int maxLines;
+
+  const _TextInputDialog({
+    required this.title,
+    required this.hint,
+    required this.confirmLabel,
+    required this.color,
+    required this.minLines,
+    required this.maxLines,
+  });
+
+  @override
+  State<_TextInputDialog> createState() => _TextInputDialogState();
+}
+
+class _TextInputDialogState extends State<_TextInputDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      title: Text(widget.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        minLines: widget.minLines,
+        maxLines: widget.maxLines,
+        decoration: InputDecoration(hintText: widget.hint),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: widget.color),
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          child: Text(widget.confirmLabel),
+        ),
+      ],
+    );
+  }
+}

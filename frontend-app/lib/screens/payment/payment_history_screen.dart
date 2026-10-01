@@ -85,31 +85,16 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   }
 
   Future<void> _requestRefund(PaymentHistoryItem item) async {
-    final reason = TextEditingController();
-    final send = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: const Text('환불 요청', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-        content: TextField(
-          controller: reason,
-          minLines: 3,
-          maxLines: 5,
-          decoration: const InputDecoration(hintText: '환불을 요청하는 이유를 적어주세요. (예: 변호사 답변을 받지 못했어요)'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.zinc900),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('환불 요청 보내기'),
-          ),
-        ],
-      ),
+    final text = await showTextInputDialog(
+      context,
+      title: '환불 요청',
+      hint: '환불을 요청하는 이유를 적어주세요. (예: 변호사 답변을 받지 못했어요)',
+      confirmLabel: '환불 요청 보내기',
+      color: AppColors.zinc900,
+      minLines: 3,
+      maxLines: 5,
     );
-    final text = reason.text.trim();
-    reason.dispose();
-    if (send != true) return;
+    if (text == null || !mounted) return;
     if (text.isEmpty) return _toast('환불을 요청하는 이유를 적어주세요.');
     setState(() => _busyOrderId = item.orderId);
     try {
