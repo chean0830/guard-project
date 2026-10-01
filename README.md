@@ -11,7 +11,7 @@
 |---|---|---|
 | 백엔드 | Spring (Java) | 뼈대 생성 완료 |
 | 웹 프론트 | Next.js | 뼈대 생성 완료 |
-| 앱 프론트 | Flutter | 최후순위 (보류) |
+| 앱 프론트 | Flutter | 착수 (회원 분석 · 변호사 상담 관리) |
 | OCR | Google Cloud Vision API | 키 발급 완료 |
 
 ## 폴더 구조
@@ -19,7 +19,7 @@
 ```
 backend/        Spring 서버 (서류 분석, 위험 판단, 시세 비교)
 frontend-web/   Next.js 웹
-frontend-app/   Flutter 앱 (개발 순서상 마지막)
+frontend-app/   Flutter 앱 (iOS/Android, 웹과 같은 백엔드 API 사용)
 docs/           기획서, 결정사항, 기타 문서
 ```
 
@@ -76,11 +76,13 @@ docs/           기획서, 결정사항, 기타 문서
 - [x] 보안 헤더(클릭재킹 방지 등), 운영 환경 쿠키 secure, DB 자동 변경 설정 환경별 분리(DDL_AUTO)
 - [x] 회원가입 이메일 인증 (6자리 인증번호, 10분·5회 오답 제한, 하루 5회 발송 제한)
 - [x] 만료된 로그인 세션·인증 기록 매일 자동 정리
+- [x] 변호사 문의함 실시간 갱신 (`/ws/lawyer-inbox` — 새 문의·새 메시지를 변호사 목록 화면으로 즉시 알림, 웹·앱 공통)
+- [x] Flutter 앱 착수: 웹과 같은 디자인의 소개 → 로그인/회원가입(이메일 인증) 흐름, 등기부 분석·결과, 관리자 로그인(일반 로그인 화면), 변호사 로그인 + 상담 관리(실시간 채팅·신고·차단·설정) — 상세는 [frontend-app/README.md](frontend-app/README.md)
 
 ## 다음 단계
 
 - 배포 (프론트: Vercel, 백엔드: Render/Fly.io 등, PostgreSQL로 전환)
-- Flutter 앱 (계획상 최후순위, 보류)
+- Flutter 앱: 웹 기능과 맞추기 (회원 상담, 결제, 소셜 로그인, 푸시 알림, 관리자 기능 등)
 
 ## 보안/개인정보 원칙
 
