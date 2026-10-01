@@ -10,7 +10,7 @@ const _statusLabel = {
   'READY': '결제 대기',
   'PAID': '결제 완료',
   'FAILED': '결제 실패',
-  'CANCELED': '결제 취소',
+  'CANCELED': '즉시 환불',
   'REFUND_REQUESTED': '환불 요청',
   'REFUNDED': '환불 완료',
 };
@@ -106,9 +106,9 @@ class _AdminPaymentScreenState extends State<AdminPaymentScreen> {
   Widget build(BuildContext context) {
     return AdminListView(
       title: '결제 관리',
-      description: '쓰지 않은 이용권은 회원이 직접 취소해요. 이미 쓴 이용권의 환불 요청만 여기서 승인·거절해요.',
+      description: '쓰지 않은 이용권은 회원이 바로 환불해요(즉시 환불 탭). 이미 쓴 이용권의 환불 요청만 여기서 승인·거절해요.',
       filters: FilterChips<String>(
-        options: const [('REFUND_REQUESTED', '환불 요청'), ('', '전체 결제'), ('REFUNDED', '환불 완료'), ('CANCELED', '결제 취소')],
+        options: const [('REFUND_REQUESTED', '환불 요청'), ('', '전체 결제'), ('REFUNDED', '환불 완료'), ('CANCELED', '즉시 환불')],
         selected: _status,
         onSelected: _select,
       ),

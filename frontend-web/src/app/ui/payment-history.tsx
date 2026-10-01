@@ -13,7 +13,7 @@ import { isLoginRequired, LoginRequiredDialog } from '@/app/ui/login-required-di
 const STATUS: Record<PaymentHistoryItem['status'], { label: string; className: string }> = {
   PAID: { label: '결제 완료', className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' },
   FAILED: { label: '결제 실패', className: 'bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300' },
-  CANCELED: { label: '결제 취소', className: 'bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300' },
+  CANCELED: { label: '환불 완료', className: 'bg-zinc-200 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300' },
   REFUND_REQUESTED: { label: '환불 검토 중', className: 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' },
   REFUNDED: { label: '환불 완료', className: 'bg-sky-100 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400' },
 }
@@ -23,7 +23,7 @@ function formatDate(value: string | null) {
 }
 
 /**
- * 결제 내역. 쓰지 않은 이용권은 바로 결제 취소, 이미 상담에 쓴 이용권은 환불 요청(관리자 승인 후 환불)만 할 수 있다.
+ * 결제 내역. 쓰지 않은 이용권은 바로 환불(토스 결제 취소, 관리자 승인 없음), 이미 상담에 쓴 이용권은 환불 요청(관리자 승인 후 환불)만 할 수 있다.
  */
 export function PaymentHistory({ initialItems }: { initialItems: PaymentHistoryItem[] }) {
   const [items, setItems] = useState(initialItems)
@@ -37,7 +37,7 @@ export function PaymentHistory({ initialItems }: { initialItems: PaymentHistoryI
   }
 
   async function handleCancel(item: PaymentHistoryItem) {
-    if (!window.confirm(`${item.amount.toLocaleString('ko-KR')}원 결제를 취소할까요? 이용권 1장이 사라지고 결제 금액이 돌려받아져요.`)) return
+    if (!window.confirm(`${item.amount.toLocaleString('ko-KR')}원을 바로 환불할까요? 쓰지 않은 이용권 1장이 사라지고, 결제한 수단으로 돌려드려요.`)) return
     setError(null)
     setPendingId(item.orderId)
     const result = await cancelPaymentAction(item.orderId)
@@ -66,8 +66,8 @@ export function PaymentHistory({ initialItems }: { initialItems: PaymentHistoryI
   return (
     <div>
       <p className="rounded-xl bg-zinc-50 p-4 text-xs leading-relaxed text-zinc-500 dark:bg-zinc-900">
-        · 변호사를 고르지 않은(쓰지 않은) 이용권은 <strong className="text-zinc-700 dark:text-zinc-300">바로 결제 취소</strong>할 수 있어요.
-        <br />· 이미 상담에 쓴 이용권은 <strong className="text-zinc-700 dark:text-zinc-300">환불 요청</strong> 후 관리자가 확인해 승인하면 환불돼요.
+        · 아직 쓰지 않은 이용권은 <strong className="text-zinc-700 dark:text-zinc-300">바로 환불</strong> 버튼을 누르면 즉시 환불돼요. 관리자 승인이 필요 없어요.
+        <br />· 이미 사용한 이용권은 사유와 함께 <strong className="text-zinc-700 dark:text-zinc-300">환불 요청</strong>을 보내면 관리자가 확인한 뒤 환불해드려요.
       </p>
 
       {error && !isLoginRequired(error) && (
@@ -132,7 +132,7 @@ export function PaymentHistory({ initialItems }: { initialItems: PaymentHistoryI
                     disabled={pendingId === item.orderId}
                     className="mt-3 rounded-full border border-zinc-300 px-4 py-1.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
                   >
-                    {pendingId === item.orderId ? '취소 중...' : '결제 취소'}
+                    {pendingId === item.orderId ? '환불 중...' : '바로 환불'}
                   </button>
                 )}
                 {used &&

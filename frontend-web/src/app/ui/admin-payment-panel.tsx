@@ -12,13 +12,13 @@ const TABS = [
   { value: 'REFUND_REQUESTED', label: '환불 요청' },
   { value: '', label: '전체 결제' },
   { value: 'REFUNDED', label: '환불 완료' },
-  { value: 'CANCELED', label: '결제 취소' },
+  { value: 'CANCELED', label: '즉시 환불' },
 ] as const
 
 const STATUS_LABEL: Record<AdminPayment['payment']['status'], string> = {
   PAID: '결제 완료',
   FAILED: '결제 실패',
-  CANCELED: '결제 취소',
+  CANCELED: '즉시 환불',
   REFUND_REQUESTED: '환불 요청',
   REFUNDED: '환불 완료',
 }

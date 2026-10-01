@@ -10,12 +10,12 @@ const _statusLabel = {
   'READY': '결제 대기',
   'PAID': '결제 완료',
   'FAILED': '결제 실패',
-  'CANCELED': '결제 취소',
+  'CANCELED': '환불 완료',
   'REFUND_REQUESTED': '환불 검토 중',
   'REFUNDED': '환불 완료',
 };
 
-/// 결제 내역 (웹 /consult/payments). 쓰지 않은 이용권은 바로 결제 취소, 이미 쓴 이용권은 환불 요청만 할 수 있다.
+/// 결제 내역 (웹 /consult/payments). 쓰지 않은 이용권은 바로 환불(관리자 승인 없음), 이미 쓴 이용권은 사유와 함께 환불 요청.
 class PaymentHistoryScreen extends StatefulWidget {
   final PaymentApi paymentApi;
 
@@ -60,14 +60,14 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: const Text('결제를 취소할까요?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-        content: Text(keepAll('${formatWon(item.amount)} 결제를 취소할까요? 이용권 1장이 사라지고 결제 금액이 돌려받아져요.')),
+        title: const Text('바로 환불할까요?', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        content: Text(keepAll('${formatWon(item.amount)}을 바로 환불할까요? 쓰지 않은 이용권 1장이 사라지고, 결제한 수단으로 돌려드려요.')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('닫기')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.red600),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('결제 취소'),
+            child: const Text('바로 환불'),
           ),
         ],
       ),
@@ -76,7 +76,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     setState(() => _busyOrderId = item.orderId);
     try {
       _replace(await widget.paymentApi.cancel(item.orderId));
-      _toast('결제를 취소했어요.');
+      _toast('환불했어요.');
     } catch (e, stack) {
       _toast(describeError(e, stack));
     } finally {
@@ -127,9 +127,9 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
             children: [
               const Text('결제 내역', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              Text(keepAll('· 쓰지 않은 이용권은 바로 결제 취소할 수 있어요.'),
+              Text(keepAll('· 아직 쓰지 않은 이용권은 바로 환불 버튼을 누르면 즉시 환불돼요. 관리자 승인이 필요 없어요.'),
                   style: const TextStyle(fontSize: 13, color: AppColors.zinc500, height: 1.5)),
-              Text(keepAll('· 이미 상담에 쓴 이용권은 환불 요청 후 관리자가 확인해 승인하면 환불돼요.'),
+              Text(keepAll('· 이미 사용한 이용권은 사유와 함께 환불 요청을 보내면 관리자가 확인한 뒤 환불해드려요.'),
                   style: const TextStyle(fontSize: 13, color: AppColors.zinc500, height: 1.5)),
               const SizedBox(height: 20),
               if (_error != null) NoticeBox(_error!),
@@ -207,8 +207,8 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
                 shape: const StadiumBorder(),
               ),
               child: Text(busy
-                  ? (item.canCancel ? '취소 중...' : '요청 중...')
-                  : (item.canCancel ? '결제 취소' : '환불 요청')),
+                  ? (item.canCancel ? '환불 중...' : '요청 중...')
+                  : (item.canCancel ? '바로 환불' : '환불 요청')),
             ),
           ),
         ],

@@ -111,7 +111,7 @@ public class PaymentService {
     public PaymentOrder cancelUnused(Long userId, String orderId) {
         PaymentOrder order = lockOwnOrder(userId, orderId);
         if (order.getStatus() != PaymentStatus.PAID || order.isUsed()) {
-            throw new PaymentException("사용하지 않은 이용권만 바로 취소할 수 있어요. 이미 사용했다면 환불 요청을 해주세요.");
+            throw new PaymentException("사용하지 않은 이용권만 바로 환불할 수 있어요. 이미 사용했다면 사유와 함께 환불 요청을 해주세요.");
         }
         tossPaymentsClient.cancel(order.getPaymentKey(), order.getOrderId(), "미사용 이용권 결제 취소 (회원 요청)");
         order.markCanceled();
@@ -129,7 +129,7 @@ public class PaymentService {
         }
         PaymentOrder order = lockOwnOrder(userId, orderId);
         if (order.getStatus() != PaymentStatus.PAID || !order.isUsed()) {
-            throw new PaymentException("사용한 이용권만 환불 요청할 수 있어요. 사용하지 않았다면 바로 결제 취소할 수 있어요.");
+            throw new PaymentException("사용한 이용권만 환불 요청할 수 있어요. 사용하지 않았다면 바로 환불 버튼으로 즉시 환불돼요.");
         }
         order.requestRefund(reason.trim());
         return orderRepository.save(order);
