@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../api/api_client.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import 'legal_screen.dart';
 
 /// 이메일 회원가입. 웹과 같이 이메일 인증(6자리 인증번호)을 마쳐야 비밀번호 입력과 가입 버튼이 열린다.
 class SignupScreen extends StatefulWidget {
@@ -189,8 +190,7 @@ class _SignupScreenState extends State<SignupScreen> {
               onPressed: _verified ? _submit : null,
             ),
             const SizedBox(height: 14),
-            const Text('가입하면 이용약관과 개인정보처리방침에 동의하는 것으로 봅니다.',
-                textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: AppColors.zinc400)),
+            const LegalConsentText(),
             const SizedBox(height: 24),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Text('이미 계정이 있으신가요? ', style: TextStyle(fontSize: 14, color: AppColors.zinc500)),

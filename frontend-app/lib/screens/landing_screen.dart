@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme.dart';
 import '../widgets/common.dart';
+import 'legal_screen.dart';
 
 const _painPoints = [
   '등기부등본을 받아도 무슨 말인지 하나도 모르겠어요',
@@ -62,13 +63,15 @@ class LandingScreen extends StatelessWidget {
           _stepsSection(),
           _finalCta(),
           const Padding(
-            padding: EdgeInsets.fromLTRB(16, 24, 16, 32),
+            padding: EdgeInsets.fromLTRB(16, 24, 16, 0),
             child: Text(
               'Project Guard는 법률 자문이 아닌 참고용 정보를 제공하는 개인 프로젝트입니다.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: AppColors.zinc400),
             ),
           ),
+          const LegalFooterLinks(),
+          const SizedBox(height: 24),
         ],
       ),
       bottomNavigationBar: SafeArea(

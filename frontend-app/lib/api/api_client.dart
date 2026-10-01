@@ -153,6 +153,31 @@ class ApiClient {
     return (jsonDecode(text) as Map<String, dynamic>)['message'] as String;
   }
 
+  /// 변호사 회원가입 신청. 자격 서류(PDF·JPG)를 함께 보내고, 관리자 승인 뒤에 로그인할 수 있다.
+  /// 서버가 안내 문구를 돌려준다.
+  Future<String> lawyerSignup({
+    required String email,
+    required String password,
+    required String name,
+    String? lawFirm,
+    required String barNumber,
+    required List<UploadFile> documents,
+  }) async {
+    final request = http.MultipartRequest('POST', _uri('/api/lawyer/auth/signup'))
+      ..fields['email'] = email
+      ..fields['password'] = password
+      ..fields['name'] = name
+      ..fields['barNumber'] = barNumber;
+    if (lawFirm != null && lawFirm.trim().isNotEmpty) request.fields['lawFirm'] = lawFirm.trim();
+    for (final f in documents) {
+      request.files.add(http.MultipartFile.fromBytes('documents', f.bytes,
+          filename: f.name, contentType: MediaType.parse(f.contentType)));
+    }
+    final res = await http.Response.fromStream(await _http.send(request));
+    _throwIfFailed(res);
+    return (jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>)['message'] as String;
+  }
+
   /// 회원가입 1단계: 이메일로 6자리 인증번호를 보낸다.
   Future<void> requestSignupCode(String email) async {
     _throwIfFailed(await _postJson('/api/auth/signup/code', {'email': email}));

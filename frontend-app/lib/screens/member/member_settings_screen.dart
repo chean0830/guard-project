@@ -4,6 +4,7 @@ import '../../api/api_client.dart';
 import '../../api/member_api.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
+import '../legal_screen.dart';
 
 /// 회원 설정 (웹 /settings): 프로필, 비밀번호 변경, 차단 관리, 회원 탈퇴.
 class MemberSettingsScreen extends StatefulWidget {
@@ -222,6 +223,7 @@ class _MemberSettingsScreenState extends State<MemberSettingsScreen> {
               child: const Text('회원 탈퇴', style: TextStyle(color: AppColors.zinc400, fontSize: 13)),
             ),
           ),
+          const LegalFooterLinks(),
         ],
       ),
     );
