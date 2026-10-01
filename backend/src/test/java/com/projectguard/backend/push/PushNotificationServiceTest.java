@@ -27,11 +27,11 @@ class PushNotificationServiceTest {
     void VAPID_키가_없으면_구독이_있어도_예외없이_조용히_건너뛴다() {
         subscriptionRepository.save(new PushSubscription(1L, "https://example.com/endpoint-1", "p256dh-key", "auth-key"));
 
-        assertDoesNotThrow(() -> pushNotificationService.notifyUser(1L, 99L, "새 답변이 도착했어요"));
+        assertDoesNotThrow(() -> pushNotificationService.notifyUser(1L, 99L, "새 답변이 도착했어요", "김변호"));
     }
 
     @Test
     void 구독이_없는_회원에게_알려도_예외가_나지_않는다() {
-        assertDoesNotThrow(() -> pushNotificationService.notifyUser(999L, 1L, "새 답변이 도착했어요"));
+        assertDoesNotThrow(() -> pushNotificationService.notifyUser(999L, 1L, "새 답변이 도착했어요", "김변호"));
     }
 }

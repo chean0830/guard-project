@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'api/api_client.dart';
+import 'api/consultation_api.dart';
+import 'api/push_service.dart';
 import 'screens/admin/admin_home_screen.dart';
+import 'screens/consultation/consultation_thread_screen.dart';
 import 'screens/landing_screen.dart';
 import 'screens/lawyer/consultation_list_screen.dart';
 import 'screens/lawyer_login_screen.dart';
@@ -10,9 +15,14 @@ import 'screens/member/member_home_screen.dart';
 import 'screens/signup_screen.dart';
 import 'theme.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await PushService.init();
   runApp(ProjectGuardApp(api: ApiClient()));
 }
+
+/// 앱을 보고 있을 때 온 푸시를 어느 화면에서든 알림줄로 보여주기 위한 키.
+final _messengerKey = GlobalKey<ScaffoldMessengerState>();
 
 class ProjectGuardApp extends StatelessWidget {
   final ApiClient api;
@@ -25,6 +35,7 @@ class ProjectGuardApp extends StatelessWidget {
       title: 'Project Guard',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      scaffoldMessengerKey: _messengerKey,
       home: AuthGate(api: api),
     );
   }
@@ -43,14 +54,70 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   late Future<Session?> _session = _loadSession();
+  Session? _current;
+  final _pushSubscriptions = <StreamSubscription<Object?>>[];
+
+  @override
+  void initState() {
+    super.initState();
+    _pushSubscriptions
+      ..add(PushService.opened.listen(_openPushTarget))
+      ..add(PushService.foreground.listen((event) => _showForegroundPush(event.$1, event.$2)));
+  }
+
+  @override
+  void dispose() {
+    for (final s in _pushSubscriptions) {
+      s.cancel();
+    }
+    super.dispose();
+  }
 
   Future<Session?> _loadSession() async {
+    Session? session;
     try {
-      return await widget.api.currentSession();
+      session = await widget.api.currentSession();
     } catch (e, stack) {
       describeError(e, stack); // 원인을 로그에 남기고, 랜딩 화면에서 다시 시도한다.
-      return null;
     }
+    _current = session;
+    if (session != null && session.role != AccountRole.admin) {
+      // 회원·변호사만 상담 알림을 받는다. 등록은 기다리지 않는다 (권한 창이 떠도 첫 화면은 바로 보이게).
+      unawaited(PushService.register(widget.api));
+      final initial = PushService.takeInitialTarget();
+      if (initial != null) WidgetsBinding.instance.addPostFrameCallback((_) => _openPushTarget(initial));
+    }
+    return session;
+  }
+
+  /// 알림을 눌렀을 때 그 상담 대화방을 연다. 지금 로그인한 계정이 받는 사람일 때만 연다.
+  void _openPushTarget(PushTarget target) {
+    final session = _current;
+    if (session == null || !mounted) return;
+    final ConsultationChatApi chat;
+    if (session.role == AccountRole.user && target.recipientType == 'USER') {
+      chat = ConsultationChatApi.member(widget.api);
+    } else if (session.role == AccountRole.lawyer && target.recipientType == 'LAWYER') {
+      chat = ConsultationChatApi.lawyer(widget.api);
+    } else {
+      return;
+    }
+    if (PushService.activeConsultationId == target.consultationId) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => ConsultationThreadScreen(
+        chat: chat,
+        consultationId: target.consultationId,
+        counterpartName: target.counterpartName,
+        onLoggedOut: _onAuthenticated,
+      ),
+    ));
+  }
+
+  void _showForegroundPush(PushTarget target, String? body) {
+    _messengerKey.currentState?.showSnackBar(SnackBar(
+      content: Text('${target.counterpartName}: ${body ?? '새 메시지가 왔어요'}', maxLines: 2, overflow: TextOverflow.ellipsis),
+      action: SnackBarAction(label: '열기', onPressed: () => _openPushTarget(target)),
+    ));
   }
 
   void _refresh() => setState(() {

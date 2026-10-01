@@ -4,8 +4,10 @@ import com.projectguard.backend.consultation.ChatBlockRepository;
 import com.projectguard.backend.consultation.Consultation;
 import com.projectguard.backend.consultation.ConsultationMessageRepository;
 import com.projectguard.backend.consultation.ConsultationRepository;
+import com.projectguard.backend.consultation.SenderType;
 import com.projectguard.backend.payment.PaymentOrderRepository;
 import com.projectguard.backend.payment.PaymentStatus;
+import com.projectguard.backend.push.DeviceTokenRepository;
 import com.projectguard.backend.push.PushSubscriptionRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,6 +31,7 @@ public class AccountDeletionService {
     private final ConsultationMessageRepository messageRepository;
     private final ChatBlockRepository chatBlockRepository;
     private final PushSubscriptionRepository pushSubscriptionRepository;
+    private final DeviceTokenRepository deviceTokenRepository;
     private final PaymentOrderRepository paymentOrderRepository;
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -40,6 +43,7 @@ public class AccountDeletionService {
             ConsultationMessageRepository messageRepository,
             ChatBlockRepository chatBlockRepository,
             PushSubscriptionRepository pushSubscriptionRepository,
+            DeviceTokenRepository deviceTokenRepository,
             PaymentOrderRepository paymentOrderRepository
     ) {
         this.userRepository = userRepository;
@@ -49,6 +53,7 @@ public class AccountDeletionService {
         this.messageRepository = messageRepository;
         this.chatBlockRepository = chatBlockRepository;
         this.pushSubscriptionRepository = pushSubscriptionRepository;
+        this.deviceTokenRepository = deviceTokenRepository;
         this.paymentOrderRepository = paymentOrderRepository;
     }
 
@@ -79,6 +84,7 @@ public class AccountDeletionService {
         }
         chatBlockRepository.deleteAll(chatBlockRepository.findByUserId(userId));
         pushSubscriptionRepository.deleteAll(pushSubscriptionRepository.findByUserId(userId));
+        deviceTokenRepository.deleteAll(deviceTokenRepository.findByOwnerTypeAndOwnerId(SenderType.USER, userId));
         resetTokenRepository.deleteByAccountTypeAndAccountId("USER", userId);
         authTokenRepository.deleteByUserId(userId);
         userRepository.delete(user);

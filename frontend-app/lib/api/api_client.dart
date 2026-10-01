@@ -9,6 +9,7 @@ import 'package:http_parser/http_parser.dart';
 
 import '../config.dart';
 import '../models/analyze_result.dart';
+import 'push_service.dart';
 
 /// 백엔드 호출 실패. 백엔드는 오류 메시지를 본문에 평문으로 내려준다.
 class ApiException implements Exception {
@@ -228,6 +229,7 @@ class ApiClient {
   }
 
   Future<void> logout() async {
+    await PushService.unregister(this); // 토큰이 살아 있을 때 먼저 이 기기의 알림을 끊는다.
     try {
       final role = await _savedRole();
       await _http.post(_uri('${role.authPath}/logout'), headers: await _authHeaders());

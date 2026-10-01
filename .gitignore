@@ -49,3 +49,7 @@ tmp/
 
 # === 테스트용 등기부등본 샘플 (실제 개인정보 포함, 절대 커밋 금지) ===
 backend/sample-data/
+
+# === Firebase (앱 푸시) — 각자 Firebase 프로젝트에서 받아 넣는다 ===
+frontend-app/android/app/google-services.json
+frontend-app/ios/Runner/GoogleService-Info.plist

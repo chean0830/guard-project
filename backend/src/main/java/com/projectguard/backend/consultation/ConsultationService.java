@@ -117,6 +117,7 @@ public class ConsultationService {
         messageRepository.save(new ConsultationMessage(consultation.getId(), SenderType.USER, initialMessage));
         publishInboxChanged(consultation, InboxChangedEvent.Reason.NEW_CONSULTATION);
         notifyLawyerIfEnabled(lawyer, initialMessage);
+        pushNotificationService.notifyLawyer(lawyer.getId(), consultation.getId(), initialMessage, userDisplayName(userId));
         return consultation;
     }
 
@@ -145,8 +146,11 @@ public class ConsultationService {
         if (senderType == SenderType.USER) {
             lawyerRepository.findById(consultation.getLawyerId())
                     .ifPresent(lawyer -> notifyLawyerIfEnabled(lawyer, content));
+            pushNotificationService.notifyLawyer(consultation.getLawyerId(), consultationId, content,
+                    userDisplayName(consultation.getUserId()));
         } else {
-            pushNotificationService.notifyUser(consultation.getUserId(), consultationId, content);
+            String lawyerName = lawyerRepository.findById(consultation.getLawyerId()).map(Lawyer::getName).orElse("담당");
+            pushNotificationService.notifyUser(consultation.getUserId(), consultationId, content, lawyerName);
         }
         return message;
     }
@@ -223,6 +227,13 @@ public class ConsultationService {
             }
         }
         return messages;
+    }
+
+    /** 변호사 상담 목록과 같은 회원 표시 이름 (이름이 없으면 이메일). */
+    private String userDisplayName(Long userId) {
+        return userRepository.findById(userId)
+                .map(u -> u.getName() != null && !u.getName().isBlank() ? u.getName() : u.getEmail())
+                .orElse("회원");
     }
 
     private void notifyLawyerIfEnabled(Lawyer lawyer, String previewText) {

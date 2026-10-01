@@ -4,6 +4,12 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// 앱 푸시(FCM): Firebase 콘솔에서 받은 google-services.json을 이 폴더(android/app)에 두면 켜진다.
+// 파일이 없으면 푸시만 꺼지고 앱은 그대로 빌드된다.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.projectguard.project_guard"
     compileSdk = flutter.compileSdkVersion

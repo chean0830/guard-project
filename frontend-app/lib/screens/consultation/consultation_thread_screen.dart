@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../api/api_client.dart';
 import '../../api/consultation_api.dart';
+import '../../api/push_service.dart';
 import '../../theme.dart';
 import '../../widgets/common.dart';
 
@@ -43,12 +44,14 @@ class _ConsultationThreadScreenState extends State<ConsultationThreadScreen> {
   @override
   void initState() {
     super.initState();
+    PushService.activeConsultationId = widget.consultationId;
     _connect();
     WidgetsBinding.instance.addPostFrameCallback((_) => showChatPolicyNoticeIfNeeded(context));
   }
 
   @override
   void dispose() {
+    if (PushService.activeConsultationId == widget.consultationId) PushService.activeConsultationId = null;
     _disposed = true;
     _reconnect?.cancel();
     _socket?.close();
