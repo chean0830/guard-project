@@ -25,7 +25,7 @@ public class DeviceToken {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, columnDefinition = "varchar(30)")
     private SenderType ownerType;
 
     @Column(nullable = false)

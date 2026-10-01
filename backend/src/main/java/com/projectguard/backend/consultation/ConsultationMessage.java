@@ -23,7 +23,7 @@ public class ConsultationMessage {
     private Long consultationId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(30)")
     private SenderType senderType;
 
     @Column(nullable = false, length = 2000)

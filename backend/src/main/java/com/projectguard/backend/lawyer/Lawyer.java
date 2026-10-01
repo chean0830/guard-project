@@ -64,7 +64,7 @@ public class Lawyer {
     private String achievements;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(30)")
     private LawyerStatus status = LawyerStatus.PENDING;
 
     private String rejectionReason;

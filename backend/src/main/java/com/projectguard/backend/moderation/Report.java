@@ -29,28 +29,28 @@ public class Report {
     private Long consultationId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(30)")
     private SenderType reporterType;
 
     @Column(nullable = false)
     private Long reporterId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(30)")
     private SenderType targetType;
 
     @Column(nullable = false)
     private Long targetId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(30)")
     private ReportReason reason;
 
     @Column(length = 1000)
     private String detail;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(30)")
     private ReportStatus status = ReportStatus.PENDING;
 
     @Column(nullable = false)

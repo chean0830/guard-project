@@ -27,7 +27,7 @@ public class ChatBlock {
 
     /** 차단한 쪽. USER면 회원이 변호사를, LAWYER면 변호사가 회원을 차단한 것. */
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(30)")
     private SenderType blockerType;
 
     @Column(nullable = false)

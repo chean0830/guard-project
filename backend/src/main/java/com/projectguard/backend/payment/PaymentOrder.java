@@ -42,7 +42,7 @@ public class PaymentOrder {
     private Instant usedAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(30)")
     private PaymentStatus status = PaymentStatus.READY;
 
     @Column(unique = true)
