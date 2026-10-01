@@ -64,6 +64,25 @@ flutter run --dart-define=API_BASE_URL=http://192.168.0.10:8080
 flutter run --dart-define=TOSS_CLIENT_KEY=test_ck_...
 ```
 
+### iOS 푸시 (Mac 필요)
+
+프로젝트에는 이미 들어가 있다: 푸시 권한(`ios/Runner/Runner.entitlements`, `aps-environment`), 백그라운드 알림
+(`Info.plist`의 `UIBackgroundModes: remote-notification`), `GoogleService-Info.plist`가 있으면 앱에 넣는 빌드 단계
+(없으면 건너뛰고 푸시 없이 빌드). 직접 할 일:
+
+1. **Apple Developer 유료 계정**(연 $99)이 필요하다. 무료 계정(Personal Team)은 푸시를 쓸 수 없어 실기기 서명이 실패한다 —
+   이때는 Xcode > Runner > Signing & Capabilities에서 Push Notifications를 지우거나 시뮬레이터로 실행한다.
+2. [Apple Developer](https://developer.apple.com/account/resources/authkeys/list) > Keys에서 **APNs 키(.p8)**를 만들고
+   Key ID와 Team ID를 적어 둔다 (키 파일은 한 번만 내려받을 수 있다).
+3. Firebase 콘솔 > 프로젝트 설정 > 일반에서 **iOS 앱 추가** — 번들 ID는 `com.projectguard.projectGuard`
+   (안드로이드 `com.projectguard.project_guard`와 다르다). 받은 `GoogleService-Info.plist`를 `ios/Runner/`에 둔다 (git 제외).
+4. Firebase 콘솔 > 프로젝트 설정 > 클라우드 메시징 > Apple 앱 구성에서 2번의 APNs 키(.p8, Key ID, Team ID)를 올린다.
+5. `open ios/Runner.xcworkspace` → Runner > Signing & Capabilities에서 Team을 고른다 (자동 서명이 푸시 권한이 든 프로비저닝을 만든다).
+6. 실기기에서 `flutter run` → 로그인하면 알림 권한을 묻는다. 시뮬레이터는 Apple Silicon Mac + iOS 16 이상에서만 푸시를 받는다.
+
+`aps-environment`는 `development`로 두면 된다 — App Store/TestFlight용으로 Archive할 때 Xcode가 배포 프로비저닝에 맞춰
+`production`으로 바꿔 넣는다. 백엔드는 따로 바꿀 것이 없다 (FCM이 APNs로 전달).
+
 ### 소셜 로그인
 
 웹(`frontend-web`, 기본 `http://localhost:3000`)이 켜져 있어야 하고, 웹 `.env.local`의 `OAUTH_BASE_URL`과 같은 주소여야 한다
@@ -85,7 +104,6 @@ flutter run --dart-define=WEB_BASE_URL=http://localhost:3000   # 기본값이라
 2. 받은 `google-services.json`을 `frontend-app/android/app/`에 둔다 (git에는 올리지 않음).
 3. 프로젝트 설정 > 서비스 계정 > "새 비공개 키 생성"으로 받은 JSON을 `backend/credentials/`에 두고
    백엔드 `.env`에 `FCM_CREDENTIALS_PATH=./credentials/<파일명>.json`을 넣는다.
-4. iOS는 Firebase에 iOS 앱 추가 → `GoogleService-Info.plist`를 `ios/Runner/`에, APNs 인증 키를 Firebase에 등록하고
-   Xcode에서 Push Notifications·Background Modes(Remote notifications) 기능을 켠다 (Mac 필요).
+4. iOS는 아래 "iOS 푸시" 참고.
 
 개발 빌드에서만 HTTP(평문) 통신을 허용한다. 배포 빌드는 HTTPS 백엔드 주소가 필요하다.

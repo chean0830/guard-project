@@ -82,7 +82,7 @@ docs/           기획서, 결정사항, 기타 문서
 ## 다음 단계
 
 - 배포 (프론트: Vercel, 백엔드: Render/Fly.io 등, PostgreSQL로 전환)
-- Flutter 앱: iOS 푸시 설정(APNs)
+- Flutter 앱: iOS 푸시 실기기 확인 (Apple Developer 계정·APNs 키·Firebase iOS 앱 등록 후, Mac 필요)
 
 ## 보안/개인정보 원칙
 

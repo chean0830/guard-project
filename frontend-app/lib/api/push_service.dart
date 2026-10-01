@@ -87,6 +87,18 @@ class PushService {
       final messaging = FirebaseMessaging.instance;
       final settings = await messaging.requestPermission();
       if (settings.authorizationStatus == AuthorizationStatus.denied) return;
+      // iOS는 애플(APNs) 토큰을 받은 뒤에야 FCM 토큰이 나온다. 앱 시작 직후엔 아직 없을 수 있어 잠깐 기다린다.
+      if (Platform.isIOS) {
+        String? apns;
+        for (var i = 0; i < 10 && apns == null; i++) {
+          apns = await messaging.getAPNSToken();
+          if (apns == null) await Future<void>.delayed(const Duration(seconds: 1));
+        }
+        if (apns == null) {
+          debugPrint('APNs 토큰을 받지 못해 푸시 등록을 건너뜁니다 (실기기·푸시 권한·APNs 키 설정 확인).');
+          return;
+        }
+      }
       final token = await messaging.getToken();
       if (token == null) return;
       await _send(api, token);
