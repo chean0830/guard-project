@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { listConsultationsAction } from '@/app/lib/consultation-action'
 import { StartConsultationForm } from '@/app/ui/start-consultation-form'
 import { ConsultationList } from '@/app/ui/consultation-list'
+import { MemberInboxLive } from '@/app/ui/inbox-live'
 
 export default async function ConsultListPage() {
   const consultations = await listConsultationsAction()
@@ -38,6 +39,7 @@ export default async function ConsultListPage() {
         <div className="mt-10">
           <h2 className="font-semibold text-zinc-950 dark:text-zinc-50">내 문의 내역</h2>
           <ConsultationList consultations={consultations} />
+          <MemberInboxLive />
         </div>
       )}
     </div>

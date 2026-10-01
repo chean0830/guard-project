@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { listLawyerConsultationsAction } from '@/app/lib/lawyer-consultation-action'
 import { LawyerConsultationList } from '@/app/ui/lawyer-consultation-list'
-import { LawyerInboxLive } from '@/app/ui/lawyer-inbox-live'
+import { LawyerInboxLive } from '@/app/ui/inbox-live'
 
 export default async function LawyerConsultationsPage() {
   const consultations = await listLawyerConsultationsAction()

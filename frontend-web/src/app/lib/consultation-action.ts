@@ -192,3 +192,19 @@ export async function unblockAction(blockId: number): Promise<BlockResult> {
   if (!response.ok) return { ok: false, message: (await response.text()) || '차단을 해제하지 못했습니다.' }
   return { ok: true }
 }
+
+/** 회원 내 문의 내역 실시간 알림(/ws/user-inbox) 입장권. */
+export async function getConsultationInboxSocketTicketAction(): Promise<string | null> {
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/consultations/inbox/socket-ticket`, {
+      method: 'POST',
+      headers: await authHeader(),
+      cache: 'no-store',
+    })
+    if (!response.ok) return null
+    const data = (await response.json()) as { ticket: string }
+    return data.ticket
+  } catch {
+    return null
+  }
+}

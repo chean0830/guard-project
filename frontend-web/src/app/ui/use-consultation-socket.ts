@@ -71,9 +71,13 @@ export function useConsultationSocket(
 }
 
 /**
- * 변호사 문의함 WebSocket 연결. 내게 배정된 대화방에 새 문의·새 메시지가 생기면 onChange를 부른다
- * (화면은 목록을 다시 불러와 미리보기·안 읽은 수를 갱신한다).
+ * 상담 목록 WebSocket 연결 (변호사 문의함 /ws/lawyer-inbox, 회원 내 문의 내역 /ws/user-inbox).
+ * 내 대화방에 새 문의·새 메시지가 생기면 onChange를 부른다(화면은 목록을 다시 불러와 미리보기·안 읽은 수를 갱신한다).
  */
-export function useLawyerInboxSocket(fetchTicket: () => Promise<string | null>, onChange: () => void) {
-  useTicketSocket('/ws/lawyer-inbox', fetchTicket, onChange)
+export function useInboxSocket(
+  owner: 'lawyer' | 'user',
+  fetchTicket: () => Promise<string | null>,
+  onChange: () => void,
+) {
+  useTicketSocket(owner === 'lawyer' ? '/ws/lawyer-inbox' : '/ws/user-inbox', fetchTicket, onChange)
 }
