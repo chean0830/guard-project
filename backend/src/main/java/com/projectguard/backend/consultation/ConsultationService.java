@@ -107,6 +107,8 @@ public class ConsultationService {
     private Consultation openConsultation(Long userId, Lawyer lawyer, String initialMessage) {
         Consultation consultation = consultationRepository.save(new Consultation(userId, lawyer.getId()));
         messageRepository.save(new ConsultationMessage(consultation.getId(), SenderType.USER, initialMessage));
+        eventPublisher.publishEvent(new LawyerInboxChangedEvent(
+                lawyer.getId(), consultation.getId(), LawyerInboxChangedEvent.Reason.NEW_CONSULTATION));
         notifyLawyerIfEnabled(lawyer, initialMessage);
         return consultation;
     }
@@ -131,6 +133,8 @@ public class ConsultationService {
         consultationRepository.save(consultation);
         eventPublisher.publishEvent(new ConsultationMessagePostedEvent(
                 consultationId, senderType, content, message.getCreatedAt()));
+        eventPublisher.publishEvent(new LawyerInboxChangedEvent(
+                consultation.getLawyerId(), consultationId, LawyerInboxChangedEvent.Reason.NEW_MESSAGE));
 
         if (senderType == SenderType.USER) {
             lawyerRepository.findById(consultation.getLawyerId())

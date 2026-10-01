@@ -56,6 +56,17 @@ public class ConsultationSocketTicketController {
         return new TicketResponse(ticketService.issue(id, SenderType.LAWYER, lawyerId));
     }
 
+    /** 변호사 상담 목록 실시간 알림(/ws/lawyer-inbox) 입장권. */
+    @PostMapping("/api/lawyer/inbox/socket-ticket")
+    public TicketResponse issueForLawyerInbox(
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        Long lawyerId = lawyerAuthService.validate(extractToken(authorization))
+                .orElseThrow(() -> new InvalidCredentialsException("로그인이 필요합니다."))
+                .getId();
+        return new TicketResponse(ticketService.issueForLawyerInbox(lawyerId));
+    }
+
     private String extractToken(String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             return null;

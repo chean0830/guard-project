@@ -15,7 +15,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.Map;
 
 /**
- * ws://{백엔드}/ws/consultations?ticket=... 로 접속한다. 입장권(ConsultationSocketTicketService)이
+ * ws://{백엔드}/ws/consultations?ticket=... (대화방) 와 ws://{백엔드}/ws/lawyer-inbox?ticket=... (변호사 상담 목록)
+ * 으로 접속한다. 입장권(ConsultationSocketTicketService)이
  * 유효해야만 연결되며, 입장권에 묶인 대화방의 알림만 받는다. 다른 사이트가 사용자 브라우저로
  * 몰래 접속하지 못하도록 프론트엔드 주소(FRONTEND_ORIGIN)에서 온 연결만 허용한다.
  */
@@ -24,15 +25,18 @@ import java.util.Map;
 public class ConsultationSocketConfig implements WebSocketConfigurer {
 
     private final ConsultationSocketHandler handler;
+    private final LawyerInboxSocketHandler inboxHandler;
     private final ConsultationSocketTicketService ticketService;
     private final String frontendOrigin;
 
     public ConsultationSocketConfig(
             ConsultationSocketHandler handler,
+            LawyerInboxSocketHandler inboxHandler,
             ConsultationSocketTicketService ticketService,
             @Value("${FRONTEND_ORIGIN:http://localhost:3000}") String frontendOrigin
     ) {
         this.handler = handler;
+        this.inboxHandler = inboxHandler;
         this.ticketService = ticketService;
         this.frontendOrigin = frontendOrigin;
     }
@@ -40,11 +44,21 @@ public class ConsultationSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(handler, "/ws/consultations")
-                .addInterceptors(new TicketHandshakeInterceptor())
+                .addInterceptors(new TicketHandshakeInterceptor(false))
+                .setAllowedOrigins(frontendOrigin);
+        registry.addHandler(inboxHandler, "/ws/lawyer-inbox")
+                .addInterceptors(new TicketHandshakeInterceptor(true))
                 .setAllowedOrigins(frontendOrigin);
     }
 
+    /** 대화방 입장권으로는 목록 소켓에, 목록 입장권으로는 대화방 소켓에 들어갈 수 없다. */
     private class TicketHandshakeInterceptor implements HandshakeInterceptor {
+
+        private final boolean inbox;
+
+        TicketHandshakeInterceptor(boolean inbox) {
+            this.inbox = inbox;
+        }
 
         @Override
         public boolean beforeHandshake(
@@ -52,8 +66,13 @@ public class ConsultationSocketConfig implements WebSocketConfigurer {
         ) {
             String ticket = UriComponentsBuilder.fromUri(request.getURI()).build().getQueryParams().getFirst("ticket");
             return ticketService.consume(ticket)
+                    .filter(t -> t.isInbox() == inbox)
                     .map(t -> {
-                        attributes.put(ConsultationSocketHandler.CONSULTATION_ID_ATTRIBUTE, t.consultationId());
+                        if (inbox) {
+                            attributes.put(LawyerInboxSocketHandler.LAWYER_ID_ATTRIBUTE, t.participantId());
+                        } else {
+                            attributes.put(ConsultationSocketHandler.CONSULTATION_ID_ATTRIBUTE, t.consultationId());
+                        }
                         return true;
                     })
                     .orElseGet(() -> {

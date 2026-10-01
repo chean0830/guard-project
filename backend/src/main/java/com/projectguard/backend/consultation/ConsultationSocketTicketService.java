@@ -21,7 +21,12 @@ public class ConsultationSocketTicketService {
 
     private static final Duration TICKET_TTL = Duration.ofSeconds(60);
 
+    /** consultationId가 null이면 대화방이 아니라 변호사 상담 목록(LawyerInboxSocketHandler) 입장권이다. */
     public record Ticket(Long consultationId, SenderType participantType, Long participantId, Instant expiresAt) {
+
+        boolean isInbox() {
+            return consultationId == null;
+        }
     }
 
     private final Map<String, Ticket> tickets = new ConcurrentHashMap<>();
@@ -34,6 +39,15 @@ public class ConsultationSocketTicketService {
     /** 대화방 당사자인지 검증한 뒤 입장권을 발급한다. */
     public String issue(Long consultationId, SenderType participantType, Long participantId) {
         consultationService.requireConsultationFor(consultationId, participantType, participantId);
+        return store(consultationId, participantType, participantId);
+    }
+
+    /** 변호사 상담 목록 알림용 입장권. 로그인한 변호사 본인의 목록에만 묶인다. */
+    public String issueForLawyerInbox(Long lawyerId) {
+        return store(null, SenderType.LAWYER, lawyerId);
+    }
+
+    private String store(Long consultationId, SenderType participantType, Long participantId) {
         Instant now = Instant.now();
         tickets.values().removeIf(t -> t.expiresAt().isBefore(now));
         String value = UUID.randomUUID().toString();

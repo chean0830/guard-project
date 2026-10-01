@@ -25,6 +25,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -79,6 +80,10 @@ class ConsultationSocketTest {
     }
 
     private Connection connect(String ticket, String origin) throws Exception {
+        return connect("/ws/consultations", ticket, origin);
+    }
+
+    private Connection connect(String path, String ticket, String origin) throws Exception {
         BlockingQueue<String> received = new LinkedBlockingQueue<>();
         WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
         headers.setOrigin(origin);
@@ -88,7 +93,7 @@ class ConsultationSocketTest {
                     protected void handleTextMessage(WebSocketSession s, TextMessage message) {
                         received.add(message.getPayload());
                     }
-                }, headers, URI.create("ws://localhost:" + port + "/ws/consultations?ticket=" + ticket))
+                }, headers, URI.create("ws://localhost:" + port + path + "?ticket=" + ticket))
                 .get(5, TimeUnit.SECONDS);
         return new Connection(session, received);
     }
@@ -142,5 +147,46 @@ class ConsultationSocketTest {
 
         assertThrows(ConsultationAccessDeniedException.class, () ->
                 ticketService.issue(consultationId, SenderType.USER, otherUserId));
+    }
+
+    @Test
+    void 변호사_목록_소켓은_새_문의와_새_메시지를_즉시_알린다() throws Exception {
+        Connection inbox = connect("/ws/lawyer-inbox", ticketService.issueForLawyerInbox(lawyerId), "http://localhost:3000");
+
+        Long newConsultation = consultationService.startConsultation(userId, "새 문의").getId();
+        String created = inbox.received().poll(3, TimeUnit.SECONDS);
+        assertNotNull(created, "새 문의가 배정되면 3초 안에 알림이 와야 한다");
+        assertTrue(created.contains("\"type\":\"inbox\""), created);
+        assertTrue(created.contains("NEW_CONSULTATION"), created);
+        assertTrue(created.contains("\"consultationId\":" + newConsultation), created);
+
+        consultationService.postMessage(consultationId, SenderType.USER, userId, "추가 질문");
+        String posted = inbox.received().poll(3, TimeUnit.SECONDS);
+        assertNotNull(posted);
+        assertTrue(posted.contains("NEW_MESSAGE"), posted);
+        assertTrue(posted.contains("\"consultationId\":" + consultationId), posted);
+        inbox.session().close();
+    }
+
+    @Test
+    void 다른_변호사의_목록_소켓에는_알림이_가지_않는다() throws Exception {
+        Lawyer other = lawyerAuthService.signup("ws-other-lawyer-" + UUID.randomUUID().toString().substring(0, 8) + "@example.com",
+                "password123", "이변호", null, "67890",
+                List.of(new MockMultipartFile("documents", "license.pdf", "application/pdf", "%PDF-1.4 dummy".getBytes())));
+        Connection otherInbox = connect("/ws/lawyer-inbox", ticketService.issueForLawyerInbox(other.getId()), "http://localhost:3000");
+
+        consultationService.postMessage(consultationId, SenderType.USER, userId, "내 변호사에게만");
+
+        assertNull(otherInbox.received().poll(1, TimeUnit.SECONDS));
+        otherInbox.session().close();
+    }
+
+    @Test
+    void 대화방_입장권과_목록_입장권은_서로_바꿔_쓸_수_없다() {
+        String inboxTicket = ticketService.issueForLawyerInbox(lawyerId);
+        assertThrows(ExecutionException.class, () -> connect("/ws/consultations", inboxTicket, "http://localhost:3000"));
+
+        String roomTicket = ticketService.issue(consultationId, SenderType.LAWYER, lawyerId);
+        assertThrows(ExecutionException.class, () -> connect("/ws/lawyer-inbox", roomTicket, "http://localhost:3000"));
     }
 }
