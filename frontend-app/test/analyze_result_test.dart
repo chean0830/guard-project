@@ -50,4 +50,27 @@ void main() {
     expect(result.riskSignals.single.severity, 'HIGH');
     expect(result.checklist, hasLength(1));
   });
+
+  test('다가구주택 응답이면 isMultiHousehold가 참이고, propertyType이 없으면 아파트로 본다', () {
+    Map<String, dynamic> response(String? propertyType) => {
+          'propertyType': ?propertyType,
+          'registry': {
+            'address': null,
+            'uniqueNumber': null,
+            'ownershipHistory': [],
+            'mortgages': [],
+            'seizures': [],
+            'totalActiveMortgageAmount': 0,
+          },
+          'marketPrice': 1500000000,
+          'buildingInfo': null,
+          'riskSignals': [],
+          'hasHighRisk': false,
+          'checklist': [],
+          'disclaimer': '참고용',
+        };
+
+    expect(AnalyzeResult.fromJson(response('MULTI_HOUSEHOLD')).isMultiHousehold, isTrue);
+    expect(AnalyzeResult.fromJson(response(null)).isMultiHousehold, isFalse);
+  });
 }

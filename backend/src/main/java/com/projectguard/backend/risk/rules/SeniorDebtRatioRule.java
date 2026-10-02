@@ -21,6 +21,11 @@ public class SeniorDebtRatioRule implements RiskRule {
 
     @Override
     public Optional<RiskSignal> evaluate(RiskAssessmentInput input) {
+        // 다가구주택은 MultiHouseholdPriorDepositRule이 대신 판단한다 (다른 세입자 보증금이 빠진 계산이라 실제보다 안전하게 나온다).
+        if (input.isMultiHousehold()) {
+            return Optional.empty();
+        }
+
         Long marketPrice = input.marketPrice();
         if (marketPrice == null || marketPrice <= 0) {
             return Optional.empty();

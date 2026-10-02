@@ -46,4 +46,13 @@ class JusoAddressResponseParserTest {
         String emptyResponse = "{\"results\":{\"common\":{\"totalCount\":\"0\"},\"juso\":[]}}";
         assertTrue(parser.parseFirst(emptyResponse).isEmpty());
     }
+
+    @Test
+    void 필지고유번호는_대지구분을_1_산을_2로_만든다() {
+        assertEquals("1162010100100120003",
+                new JusoAddressResult(null, "1162010100", null, "0", "12", "3").pnu());
+        assertEquals("1162010100200120000",
+                new JusoAddressResult(null, "1162010100", null, "1", "12", "0").pnu());
+        assertEquals(null, new JusoAddressResult(null, null, null, "0", "12", "3").pnu());
+    }
 }

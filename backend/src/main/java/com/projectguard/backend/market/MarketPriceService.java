@@ -37,6 +37,12 @@ public class MarketPriceService {
     public Optional<Long> lookupMarketPrice(
             PropertyType propertyType, String address, String buildingName, Double exclusiveAreaSqm
     ) {
+        // 다가구주택 실거래가 API는 지번을 공개하지 않아 어느 건물 거래인지 알 수 없다 — 이웃 건물 가격을
+        // 이 건물 시세로 추정하면 근거 없는 "안전" 판정이 나올 수 있어 자동 조회하지 않는다.
+        if (propertyType == PropertyType.MULTI_HOUSEHOLD) {
+            return Optional.empty();
+        }
+
         Optional<JusoAddressResult> addressResult = jusoAddressClient.search(address);
         if (addressResult.isEmpty()) {
             return Optional.empty();
@@ -64,6 +70,7 @@ public class MarketPriceService {
             case APARTMENT -> aptTradeClient;
             case OFFICETEL -> officetelTradeClient;
             case VILLA -> villaTradeClient;
+            case MULTI_HOUSEHOLD -> throw new IllegalArgumentException("다가구주택은 시세를 자동 조회하지 않는다.");
         };
     }
 

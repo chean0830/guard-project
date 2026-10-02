@@ -41,6 +41,13 @@ export type BuildingInfo = {
   structureType: string | null
   useApprovalDate: string | null
   totalFloorAreaSqm: number | null
+  etcPurpose: string | null
+  familyCount: number | null
+}
+
+export type OfficialHousePrice = {
+  price: number
+  year: number
 }
 
 export type RiskSignal = {
@@ -58,8 +65,11 @@ export type ChecklistItem = {
 }
 
 export type AnalyzeResult = {
+  propertyType: 'APARTMENT' | 'OFFICETEL' | 'VILLA' | 'MULTI_HOUSEHOLD'
   registry: RegistryAnalysis
+  landRegistry: RegistryAnalysis | null
   marketPrice: number | null
+  officialHousePrice: OfficialHousePrice | null
   buildingInfo: BuildingInfo | null
   riskSignals: RiskSignal[]
   hasHighRisk: boolean
@@ -95,8 +105,24 @@ export async function analyzeAction(_prevState: AnalyzeState, formData: FormData
   outgoing.append('propertyType', String(propertyType))
   outgoing.append('contractType', String(contractType))
   outgoing.append('depositAmount', String(depositAmount))
+  for (const file of formData.getAll('landFiles')) {
+    if (file instanceof File && file.size > 0) {
+      outgoing.append('landFiles', file)
+    }
+  }
 
-  for (const field of ['monthlyRent', 'buildingName', 'exclusiveAreaSqm', 'declaredLandlordName', 'declaredAddress']) {
+  for (const field of [
+    'monthlyRent',
+    'buildingName',
+    'exclusiveAreaSqm',
+    'declaredLandlordName',
+    'declaredAddress',
+    'priorDepositTotal',
+    'priorDepositSource',
+    'buildingPrice',
+    'violationBuilding',
+    'roomCount',
+  ]) {
     const value = formData.get(field)
     if (value) {
       outgoing.append(field, String(value))

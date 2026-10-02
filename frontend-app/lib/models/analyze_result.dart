@@ -1,7 +1,15 @@
 /// 백엔드 `POST /api/analyze` 응답(AnalyzeResponse)을 그대로 옮긴 모델.
 class AnalyzeResult {
+  /// APARTMENT / OFFICETEL / VILLA / MULTI_HOUSEHOLD
+  final String propertyType;
   final RegistryAnalysis registry;
+
+  /// 다가구에서 함께 올린 토지 등기부. 없으면 null.
+  final RegistryAnalysis? landRegistry;
   final int? marketPrice;
+
+  /// 단독·다가구 공시가격(개별주택가격). 다가구가 아니거나 조회 실패면 null.
+  final OfficialHousePrice? officialHousePrice;
   final BuildingInfo? buildingInfo;
   final List<RiskSignal> riskSignals;
   final bool hasHighRisk;
@@ -9,8 +17,11 @@ class AnalyzeResult {
   final String disclaimer;
 
   AnalyzeResult({
+    required this.propertyType,
     required this.registry,
+    this.landRegistry,
     required this.marketPrice,
+    this.officialHousePrice,
     required this.buildingInfo,
     required this.riskSignals,
     required this.hasHighRisk,
@@ -18,9 +29,19 @@ class AnalyzeResult {
     required this.disclaimer,
   });
 
+  /// 다가구주택은 입력값에만 의존하는 결과라 "안전"으로 보여주지 않는다.
+  bool get isMultiHousehold => propertyType == 'MULTI_HOUSEHOLD';
+
   factory AnalyzeResult.fromJson(Map<String, dynamic> json) => AnalyzeResult(
+        propertyType: json['propertyType'] as String? ?? 'APARTMENT',
         registry: RegistryAnalysis.fromJson(json['registry'] as Map<String, dynamic>),
+        landRegistry: json['landRegistry'] == null
+            ? null
+            : RegistryAnalysis.fromJson(json['landRegistry'] as Map<String, dynamic>),
         marketPrice: (json['marketPrice'] as num?)?.toInt(),
+        officialHousePrice: json['officialHousePrice'] == null
+            ? null
+            : OfficialHousePrice.fromJson(json['officialHousePrice'] as Map<String, dynamic>),
         buildingInfo: json['buildingInfo'] == null
             ? null
             : BuildingInfo.fromJson(json['buildingInfo'] as Map<String, dynamic>),
@@ -140,12 +161,26 @@ class SeizureEntry {
       );
 }
 
+class OfficialHousePrice {
+  final int price;
+  final int year;
+
+  OfficialHousePrice({required this.price, required this.year});
+
+  factory OfficialHousePrice.fromJson(Map<String, dynamic> json) => OfficialHousePrice(
+        price: (json['price'] as num).toInt(),
+        year: (json['year'] as num).toInt(),
+      );
+}
+
 class BuildingInfo {
   final String? buildingName;
   final String? mainPurpose;
   final String? structureType;
   final String? useApprovalDate;
   final double? totalFloorAreaSqm;
+  final String? etcPurpose;
+  final int? familyCount;
 
   BuildingInfo({
     required this.buildingName,
@@ -153,6 +188,8 @@ class BuildingInfo {
     required this.structureType,
     required this.useApprovalDate,
     required this.totalFloorAreaSqm,
+    this.etcPurpose,
+    this.familyCount,
   });
 
   factory BuildingInfo.fromJson(Map<String, dynamic> json) => BuildingInfo(
@@ -161,6 +198,8 @@ class BuildingInfo {
         structureType: json['structureType'] as String?,
         useApprovalDate: json['useApprovalDate'] as String?,
         totalFloorAreaSqm: (json['totalFloorAreaSqm'] as num?)?.toDouble(),
+        etcPurpose: json['etcPurpose'] as String?,
+        familyCount: (json['familyCount'] as num?)?.toInt(),
       );
 }
 

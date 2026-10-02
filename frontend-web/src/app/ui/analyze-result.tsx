@@ -94,7 +94,19 @@ function ChecklistCard({ item }: { item: ChecklistItem }) {
 }
 
 export function AnalyzeResultView({ result }: { result: AnalyzeResult }) {
-  const { registry, marketPrice, buildingInfo, riskSignals, hasHighRisk, checklist, disclaimer } = result
+  const {
+    propertyType,
+    registry,
+    landRegistry,
+    marketPrice,
+    officialHousePrice,
+    buildingInfo,
+    riskSignals,
+    hasHighRisk,
+    checklist,
+    disclaimer,
+  } = result
+  const isMultiHousehold = propertyType === 'MULTI_HOUSEHOLD'
   const sortedSignals = [...riskSignals].sort(
     (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity],
   )
@@ -127,6 +139,23 @@ export function AnalyzeResultView({ result }: { result: AnalyzeResult }) {
             />
             <p className="mt-2 text-xs text-zinc-400">* 포트폴리오 데모 상담이며, 실제 변호사 상담이 아닙니다.</p>
           </div>
+        </div>
+      ) : isMultiHousehold ? (
+        // 다가구주택은 입력값에만 의존하는 결과라, 위험 신호가 없어도 "안전"으로 보여주지 않는다.
+        <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-amber-400 bg-amber-50 p-6 text-center dark:border-amber-700 dark:bg-amber-950/40">
+          <WarningIcon className="h-10 w-10 text-amber-600 dark:text-amber-400" />
+          <p className="text-lg font-extrabold text-amber-900 sm:text-xl dark:text-amber-100">
+            조건부 결과예요. 안전하다는 뜻이 아니에요
+          </p>
+          <p className="text-sm text-amber-900/80 dark:text-amber-100/80">
+            다가구주택은 먼저 들어온 세입자 보증금이 등기부에 나오지 않아, 이 결과는 입력하신 선순위 보증금과 건물
+            시세가 정확할 때만 의미가 있어요. 계약 전에 전입세대 열람내역서·확정일자 부여현황을 꼭 직접 확인하세요.
+          </p>
+          <LawyerCta
+            label="계약 전에 변호사에게 확인받기 💬"
+            className="mt-1 inline-flex w-full items-center justify-center rounded-full bg-amber-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-amber-700"
+          />
+          <p className="text-xs text-zinc-400">* 포트폴리오 데모 상담이며, 실제 변호사 상담이 아닙니다.</p>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-2 rounded-2xl border border-emerald-300 bg-emerald-50 p-5 text-center dark:border-emerald-900 dark:bg-emerald-950">
@@ -196,15 +225,65 @@ export function AnalyzeResultView({ result }: { result: AnalyzeResult }) {
             <dd>{registry.uniqueNumber ?? '인식 실패'}</dd>
           </div>
           <div>
-            <dt className="text-zinc-500">조회된 시세</dt>
-            <dd>{marketPrice !== null ? formatWon(marketPrice) : '조회 실패 (실거래 내역 없음)'}</dd>
+            <dt className="text-zinc-500">{isMultiHousehold ? '입력하신 건물 시세' : '조회된 시세'}</dt>
+            <dd>
+              {marketPrice !== null
+                ? formatWon(marketPrice)
+                : isMultiHousehold
+                  ? '입력 안 함'
+                  : '조회 실패 (실거래 내역 없음)'}
+            </dd>
           </div>
+          {isMultiHousehold && (
+            <div>
+              <dt className="text-zinc-500">
+                공시가격{officialHousePrice ? ` (${officialHousePrice.year}년)` : ''}
+              </dt>
+              <dd>
+                {officialHousePrice ? formatWon(officialHousePrice.price) : '조회 실패'}
+                {officialHousePrice && marketPrice === null && (
+                  <span className="block text-xs text-zinc-500">
+                    건물 시세를 입력하지 않아 공시가격으로 계산했어요. 보통 실제 시세보다 낮아 보수적인 결과예요.
+                  </span>
+                )}
+              </dd>
+            </div>
+          )}
           <div>
             <dt className="text-zinc-500">활성 근저당 합계</dt>
             <dd>{formatWon(registry.totalActiveMortgageAmount)}</dd>
           </div>
         </dl>
       </section>
+
+      {landRegistry && (
+        <section>
+          <h2 className="mb-2 text-lg font-semibold">토지 등기부 요약</h2>
+          <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-zinc-500">토지 주소</dt>
+              <dd>{landRegistry.address ?? '인식 실패'}</dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500">토지 소유자</dt>
+              <dd>
+                {landRegistry.ownershipHistory.filter((e) => !e.cancelled).at(-1)?.ownerName ?? '인식 실패'}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500">토지 활성 근저당 합계</dt>
+              <dd>{formatWon(landRegistry.totalActiveMortgageAmount)}</dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500">말소되지 않은 압류·가압류</dt>
+              <dd>{landRegistry.seizures.filter((s) => !s.cancelled).length}건</dd>
+            </div>
+          </dl>
+          <p className="mt-2 text-xs text-zinc-500">
+            건물과 토지에 같이 설정된 근저당(공동담보)은 위험 계산에서 한 번만 셌어요.
+          </p>
+        </section>
+      )}
 
       <section>
         <h2 className="mb-2 text-lg font-semibold">건축물대장 정보</h2>
@@ -218,6 +297,16 @@ export function AnalyzeResultView({ result }: { result: AnalyzeResult }) {
               <dt className="text-zinc-500">주용도</dt>
               <dd>{buildingInfo.mainPurpose ?? '정보 없음'}</dd>
             </div>
+            <div>
+              <dt className="text-zinc-500">기타 용도</dt>
+              <dd>{buildingInfo.etcPurpose ?? '정보 없음'}</dd>
+            </div>
+            {buildingInfo.familyCount !== null && (
+              <div>
+                <dt className="text-zinc-500">가구수</dt>
+                <dd>{buildingInfo.familyCount}가구</dd>
+              </div>
+            )}
             <div>
               <dt className="text-zinc-500">구조</dt>
               <dd>{buildingInfo.structureType ?? '정보 없음'}</dd>

@@ -41,6 +41,17 @@ public record JusoAddressResult(
         return zeroPad(lnbrSlno);
     }
 
+    /**
+     * 19자리 필지고유번호(PNU) = 법정동코드 10자리 + 대지구분 1자리(1=일반, 2=산) + 본번 4자리 + 부번 4자리.
+     * 브이월드 공시가격 API 조회 키로 쓴다. 건축물대장 API의 대지구분코드(0/1)와 값이 다르니 주의.
+     */
+    public String pnu() {
+        if (admCd == null || admCd.length() != 10) {
+            return null;
+        }
+        return admCd + ("1".equals(mtYn) ? "2" : "1") + bun() + ji();
+    }
+
     private String zeroPad(String value) {
         if (value == null || value.isBlank()) {
             return "0000";

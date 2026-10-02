@@ -1,6 +1,7 @@
 package com.projectguard.backend.risk.rules;
 
 import com.projectguard.backend.common.ContractType;
+import com.projectguard.backend.common.PropertyType;
 import com.projectguard.backend.registry.RegistryAnalysis;
 import com.projectguard.backend.risk.RiskAssessmentInput;
 import com.projectguard.backend.risk.RiskSeverity;
@@ -68,6 +69,16 @@ class JeonseRatioRuleTest {
     void 월세인데_월세금액이_없으면_평가하지_않는다() {
         RiskAssessmentInput input = new RiskAssessmentInput(
                 emptyRegistry(), ContractType.WOLSE, 100_000_000L, null, 1_000_000_000L, null, null);
+        assertTrue(rule.evaluate(input).isEmpty());
+    }
+
+    @Test
+    void 다가구주택은_전용_규칙이_판단하므로_평가하지_않는다() {
+        RegistryAnalysis registry = new RegistryAnalysis("주소", "고유번호", List.of(), List.of(), List.of(), 900_000_000L);
+        RiskAssessmentInput input = new RiskAssessmentInput(
+                registry, ContractType.JEONSE, 400_000_000L, null, 1_000_000_000L, null, null,
+                PropertyType.MULTI_HOUSEHOLD, null, null);
+
         assertTrue(rule.evaluate(input).isEmpty());
     }
 }

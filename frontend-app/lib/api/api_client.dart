@@ -60,6 +60,20 @@ class AnalyzeRequest {
   final String? declaredLandlordName;
   final String? declaredAddress;
 
+  /// 다가구주택 전용: 먼저 들어온 세입자 보증금 합계, 그 출처, 건물 전체 시세.
+  final int? priorDepositTotal;
+  final String? priorDepositSource;
+  final int? buildingPrice;
+
+  /// 건축물대장 위반건축물 표시 (MARKED / NOT_MARKED). 확인 안 했으면 null.
+  final String? violationBuilding;
+
+  /// 다가구주택 토지 등기부 (선택).
+  final List<UploadFile> landFiles;
+
+  /// 다가구 건물 전체 방(호실) 수 (선택). 없으면 서버가 건축물대장 가구수를 쓴다.
+  final int? roomCount;
+
   AnalyzeRequest({
     required this.files,
     required this.propertyType,
@@ -70,6 +84,12 @@ class AnalyzeRequest {
     this.exclusiveAreaSqm,
     this.declaredLandlordName,
     this.declaredAddress,
+    this.priorDepositTotal,
+    this.priorDepositSource,
+    this.buildingPrice,
+    this.violationBuilding,
+    this.landFiles = const [],
+    this.roomCount,
   });
 }
 
@@ -328,14 +348,21 @@ class ApiClient {
     optional('exclusiveAreaSqm', request.exclusiveAreaSqm);
     optional('declaredLandlordName', request.declaredLandlordName);
     optional('declaredAddress', request.declaredAddress);
+    optional('priorDepositTotal', request.priorDepositTotal);
+    optional('priorDepositSource', request.priorDepositSource);
+    optional('buildingPrice', request.buildingPrice);
+    optional('violationBuilding', request.violationBuilding);
+    optional('roomCount', request.roomCount);
 
-    for (final f in request.files) {
-      multipart.files.add(http.MultipartFile.fromBytes(
-        'files',
-        f.bytes,
-        filename: f.name,
-        contentType: MediaType.parse(f.contentType),
-      ));
+    for (final (field, list) in [('files', request.files), ('landFiles', request.landFiles)]) {
+      for (final f in list) {
+        multipart.files.add(http.MultipartFile.fromBytes(
+          field,
+          f.bytes,
+          filename: f.name,
+          contentType: MediaType.parse(f.contentType),
+        ));
+      }
     }
 
     final res = await http.Response.fromStream(await _http.send(multipart));

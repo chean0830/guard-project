@@ -23,6 +23,11 @@ public class JeonseRatioRule implements RiskRule {
 
     @Override
     public Optional<RiskSignal> evaluate(RiskAssessmentInput input) {
+        // 다가구주택은 MultiHouseholdPriorDepositRule이 대신 판단한다 (내 보증금만 건물 전체 시세와 비교하면 항상 낮게 나와 의미가 없다).
+        if (input.isMultiHousehold()) {
+            return Optional.empty();
+        }
+
         Long marketPrice = input.marketPrice();
         if (marketPrice == null || marketPrice <= 0) {
             return Optional.empty();

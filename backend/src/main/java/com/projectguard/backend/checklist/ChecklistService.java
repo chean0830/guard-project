@@ -1,6 +1,8 @@
 package com.projectguard.backend.checklist;
 
 import com.projectguard.backend.common.ContractType;
+import com.projectguard.backend.common.PropertyType;
+import com.projectguard.backend.common.ViolationBuildingAnswer;
 import com.projectguard.backend.registry.RegistryAnalysis;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +17,42 @@ import java.util.List;
 public class ChecklistService {
 
     public List<ChecklistItem> generate(RegistryAnalysis registry, ContractType contractType) {
+        return generate(registry, contractType, PropertyType.APARTMENT);
+    }
+
+    public List<ChecklistItem> generate(RegistryAnalysis registry, ContractType contractType, PropertyType propertyType) {
+        return generate(registry, contractType, propertyType, null);
+    }
+
+    public List<ChecklistItem> generate(
+            RegistryAnalysis registry, ContractType contractType, PropertyType propertyType,
+            ViolationBuildingAnswer violationBuilding
+    ) {
+        return generate(registry, contractType, propertyType, violationBuilding, false);
+    }
+
+    /**
+     * @param landRegistryProvided 토지 등기부를 함께 올렸는지. 올렸으면 "토지 등기부 확인" 안내는 뺀다.
+     */
+    public List<ChecklistItem> generate(
+            RegistryAnalysis registry, ContractType contractType, PropertyType propertyType,
+            ViolationBuildingAnswer violationBuilding, boolean landRegistryProvided
+    ) {
         List<ChecklistItem> items = new ArrayList<>();
+
+        if (propertyType == PropertyType.MULTI_HOUSEHOLD) {
+            items.add(new ChecklistItem(
+                    "확정일자 부여현황 확인 (다가구 필수)",
+                    "임대인 동의를 받아 주민센터에서 이 건물의 확정일자 부여현황을 발급받으세요. 먼저 들어온 세입자들의 보증금과 확정일자가 나와요. 임대인 말만 믿지 마세요."));
+            if (!landRegistryProvided) {
+                items.add(new ChecklistItem(
+                        "토지 등기부등본 확인 (다가구 필수)",
+                        "다가구주택은 건물과 토지 등기부가 따로 있어요. 토지에만 걸린 근저당이나 압류가 있는지 토지 등기부도 꼭 열람하세요."));
+            }
+            items.add(new ChecklistItem(
+                    "계약서에 호수와 선순위 보증금 명시",
+                    "다가구는 호수가 등기부에 없어요. 계약서에 건물 전체 주소와 내가 쓰는 호수(층·위치)를 적고, 임대인이 알려준 선순위 보증금 합계도 특약으로 적어두세요."));
+        }
 
         items.add(new ChecklistItem(
                 "임대인 신분증 확인",
@@ -29,6 +66,13 @@ public class ChecklistService {
         items.add(new ChecklistItem(
                 "전입신고 + 확정일자",
                 "이사 당일 바로 전입신고를 하고 확정일자를 받아 대항력과 우선변제권을 확보하세요."));
+
+        // 위반건축물 여부는 공공 API로 알 수 없어, 표시가 없다고 직접 확인한 경우가 아니면 확인 방법을 안내한다.
+        if (violationBuilding != ViolationBuildingAnswer.NOT_MARKED) {
+            items.add(new ChecklistItem(
+                    "건축물대장 위반건축물 표시 확인",
+                    "정부24에서 건축물대장(일반 또는 집합)을 무료로 열람해, 첫 장 위쪽에 '위반건축물' 표시가 있는지 확인하세요. 표시가 있으면 전세자금대출·보증보험 가입이 막힐 수 있어요."));
+        }
 
         if (!registry.mortgages().isEmpty()) {
             items.add(new ChecklistItem(

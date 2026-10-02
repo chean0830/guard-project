@@ -1,11 +1,18 @@
 package com.projectguard.backend.api;
 
+import com.projectguard.backend.market.OfficialHousePriceService;
+import com.projectguard.backend.market.OfficialHousePrice;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.argThat;
+import com.projectguard.backend.common.PriorDepositSource;
 import com.projectguard.backend.checklist.ChecklistService;
 import com.projectguard.backend.market.BuildingRegisterService;
 import com.projectguard.backend.market.MarketPriceService;
 import com.projectguard.backend.registry.NotRegistryDocumentException;
 import com.projectguard.backend.registry.RegistryAnalysis;
 import com.projectguard.backend.registry.RegistryAnalysisService;
+import com.projectguard.backend.registry.RegistryKind;
 import com.projectguard.backend.risk.RiskAssessmentResult;
 import com.projectguard.backend.risk.RiskAssessmentService;
 import com.projectguard.backend.risk.RiskSeverity;
@@ -56,6 +63,9 @@ class AnalyzeControllerTest {
 
     @MockitoBean
     private ChecklistService checklistService;
+
+    @MockitoBean
+    private OfficialHousePriceService officialHousePriceService;
 
     private MockMultipartFile samplePdf() {
         return new MockMultipartFile("files", "test.pdf", "application/pdf", "%PDF-1.4 dummy".getBytes());
@@ -140,5 +150,92 @@ class AnalyzeControllerTest {
                         .param("contractType", "MONTHLY")
                         .param("depositAmount", "200000000"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void 다가구주택은_시세를_조회하지_않고_입력값과_강화된_면책문구로_응답한다() throws Exception {
+        RegistryAnalysis registry = new RegistryAnalysis(
+                "서울특별시 관악구 테스트로 45", "1234-2020-000002", List.of(), List.of(), List.of(), 0L);
+        when(registryAnalysisService.analyze(anyList())).thenReturn(registry);
+        when(riskAssessmentService.assess(any())).thenReturn(new RiskAssessmentResult(List.of()));
+        when(officialHousePriceService.lookup("서울특별시 관악구 테스트로 45"))
+                .thenReturn(Optional.of(new OfficialHousePrice(900_000_000L, 2026)));
+
+        mockMvc.perform(multipart("/api/analyze")
+                        .file(samplePdf())
+                        .param("propertyType", "MULTI_HOUSEHOLD")
+                        .param("contractType", "JEONSE")
+                        .param("depositAmount", "100000000")
+                        .param("priorDepositTotal", "300000000")
+                        .param("priorDepositSource", "LANDLORD_CLAIM")
+                        .param("buildingPrice", "1500000000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.propertyType").value("MULTI_HOUSEHOLD"))
+                .andExpect(jsonPath("$.marketPrice").value(1_500_000_000L))
+                .andExpect(jsonPath("$.officialHousePrice.price").value(900_000_000L))
+                .andExpect(jsonPath("$.officialHousePrice.year").value(2026))
+                .andExpect(jsonPath("$.disclaimer").value(org.hamcrest.Matchers.containsString("안전하다고 판정하지 않습니다")));
+
+        verify(marketPriceService, never()).lookupMarketPrice(any(), any(), any(), any());
+        verify(riskAssessmentService).assess(argThat(input -> input.isMultiHousehold()
+                && input.priorDepositTotal() == 300_000_000L
+                && input.priorDepositSource() == PriorDepositSource.LANDLORD_CLAIM
+                && input.officialHousePrice().price() == 900_000_000L));
+    }
+
+    @Test
+    void 다가구가_아니면_공시가격을_조회하지_않는다() throws Exception {
+        RegistryAnalysis registry = new RegistryAnalysis(
+                "서울특별시 강남구 테스트로 123", "1234-2020-000001", List.of(), List.of(), List.of(), 0L);
+        when(registryAnalysisService.analyze(anyList())).thenReturn(registry);
+        when(marketPriceService.lookupMarketPrice(any(), any(), any(), any())).thenReturn(Optional.empty());
+        when(riskAssessmentService.assess(any())).thenReturn(new RiskAssessmentResult(List.of()));
+
+        mockMvc.perform(multipart("/api/analyze")
+                        .file(samplePdf())
+                        .param("propertyType", "APARTMENT")
+                        .param("contractType", "JEONSE")
+                        .param("depositAmount", "200000000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.officialHousePrice").doesNotExist());
+
+        verify(officialHousePriceService, never()).lookup(any());
+    }
+
+    @Test
+    void 토지_등기부_칸에_건물_등기부를_올리면_400과_안내() throws Exception {
+        RegistryAnalysis building = new RegistryAnalysis(
+                "서울특별시 관악구 테스트로 45", "1", List.of(), List.of(), List.of(), 0L, RegistryKind.BUILDING);
+        when(registryAnalysisService.analyze(anyList())).thenReturn(building);
+
+        mockMvc.perform(multipart("/api/analyze")
+                        .file(samplePdf())
+                        .file(new MockMultipartFile("landFiles", "land.pdf", "application/pdf", "%PDF-1.4 land".getBytes()))
+                        .param("propertyType", "MULTI_HOUSEHOLD")
+                        .param("contractType", "JEONSE")
+                        .param("depositAmount", "100000000"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("토지 등기부등본 칸에 건물 등기부등본")));
+    }
+
+    @Test
+    void 다가구는_토지_등기부를_함께_분석해_응답에_담는다() throws Exception {
+        RegistryAnalysis building = new RegistryAnalysis(
+                "서울특별시 관악구 봉천동 1", "1", List.of(), List.of(), List.of(), 0L, RegistryKind.BUILDING);
+        RegistryAnalysis land = new RegistryAnalysis(
+                "서울특별시 관악구 봉천동 1", "2", List.of(), List.of(), List.of(), 0L, RegistryKind.LAND);
+        when(registryAnalysisService.analyze(anyList())).thenReturn(building, land);
+        when(riskAssessmentService.assess(any())).thenReturn(new RiskAssessmentResult(List.of()));
+
+        mockMvc.perform(multipart("/api/analyze")
+                        .file(samplePdf())
+                        .file(new MockMultipartFile("landFiles", "land.pdf", "application/pdf", "%PDF-1.4 land".getBytes()))
+                        .param("propertyType", "MULTI_HOUSEHOLD")
+                        .param("contractType", "JEONSE")
+                        .param("depositAmount", "100000000"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.landRegistry.uniqueNumber").value("2"));
+
+        verify(riskAssessmentService).assess(argThat(input -> input.landRegistry() == land));
     }
 }

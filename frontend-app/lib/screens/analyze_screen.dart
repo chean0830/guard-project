@@ -14,6 +14,19 @@ const _propertyTypes = {
   'APARTMENT': '아파트',
   'OFFICETEL': '오피스텔',
   'VILLA': '빌라 (연립·다세대)',
+  'MULTI_HOUSEHOLD': '원룸·다가구주택',
+};
+
+const _violationBuildingAnswers = {
+  '': '아직 확인 안 했어요',
+  'NOT_MARKED': '위반건축물 표시 없음',
+  'MARKED': '위반건축물 표시 있음',
+};
+
+const _priorDepositSources = {
+  'OFFICIAL_DOCUMENT': '서류(전입세대 열람·확정일자 부여현황)로 확인',
+  'LANDLORD_CLAIM': '임대인·중개사 말만 들음',
+  'UNKNOWN': '아직 모름',
 };
 
 const _contractTypes = {
@@ -39,6 +52,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
   final _formKey = GlobalKey<FormState>();
   final _picker = ImagePicker();
   final List<UploadFile> _files = [];
+  final List<UploadFile> _landFiles = [];
 
   String _propertyType = 'APARTMENT';
   String _contractType = 'JEONSE';
@@ -48,13 +62,21 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
   final _area = TextEditingController();
   final _landlord = TextEditingController();
   final _address = TextEditingController();
+  final _priorDeposit = TextEditingController();
+  final _buildingPrice = TextEditingController();
+  final _roomCount = TextEditingController();
+  String? _priorDepositSource;
+  bool _multiHouseholdAcknowledged = false;
+  String _violationBuilding = '';
+
+  bool get _isMultiHousehold => _propertyType == 'MULTI_HOUSEHOLD';
 
   bool _loading = false;
   String? _error;
 
   @override
   void dispose() {
-    for (final c in [_deposit, _monthlyRent, _buildingName, _area, _landlord, _address]) {
+    for (final c in [_deposit, _monthlyRent, _buildingName, _area, _landlord, _address, _priorDeposit, _buildingPrice, _roomCount]) {
       c.dispose();
     }
     super.dispose();
@@ -63,10 +85,12 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
   Future<void> _takePhoto() async {
     final photo = await _picker.pickImage(source: ImageSource.camera, imageQuality: 90);
     if (photo == null) return;
-    await _addImages([photo]);
+    await _addImages([photo], _files);
   }
 
-  Future<void> _chooseFiles() async {
+  /// [target]에 고른 파일을 담는다 — 건물 등기부(_files) 또는 다가구 토지 등기부(_landFiles).
+  Future<void> _chooseFiles([List<UploadFile>? target]) async {
+    final into = target ?? _files;
     final choice = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -90,16 +114,16 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
       ),
     );
     if (choice == 'photos') {
-      await _addImages(await _picker.pickMultiImage(imageQuality: 90));
+      await _addImages(await _picker.pickMultiImage(imageQuality: 90), into);
     } else if (choice == 'pdf') {
       final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['pdf']);
       if (file == null) return;
       final bytes = await file.readAsBytes();
-      setState(() => _files.add(UploadFile(name: file.name, bytes: bytes, contentType: 'application/pdf')));
+      setState(() => into.add(UploadFile(name: file.name, bytes: bytes, contentType: 'application/pdf')));
     }
   }
 
-  Future<void> _addImages(List<XFile> images) async {
+  Future<void> _addImages(List<XFile> images, List<UploadFile> into) async {
     final added = <UploadFile>[];
     for (final img in images) {
       added.add(UploadFile(
@@ -108,7 +132,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
         contentType: img.mimeType ?? (img.name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg'),
       ));
     }
-    setState(() => _files.addAll(added));
+    setState(() => into.addAll(added));
   }
 
   int? _parseInt(String text) => int.tryParse(text.replaceAll(',', '').trim());
@@ -120,6 +144,10 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
       return;
     }
     if (!_formKey.currentState!.validate()) return;
+    if (_isMultiHousehold && !_multiHouseholdAcknowledged) {
+      setState(() => _error = '다가구주택 안내를 확인하고 체크해주세요.');
+      return;
+    }
     FocusScope.of(context).unfocus();
 
     setState(() => _loading = true);
@@ -130,10 +158,17 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
         contractType: _contractType,
         depositAmount: _parseInt(_deposit.text)!,
         monthlyRent: _contractType == 'WOLSE' ? _parseInt(_monthlyRent.text) : null,
-        buildingName: _buildingName.text,
-        exclusiveAreaSqm: double.tryParse(_area.text.trim()),
+        buildingName: _isMultiHousehold ? null : _buildingName.text,
+        exclusiveAreaSqm: _isMultiHousehold ? null : double.tryParse(_area.text.trim()),
         declaredLandlordName: _landlord.text,
         declaredAddress: _address.text,
+        priorDepositSource: _isMultiHousehold ? _priorDepositSource : null,
+        priorDepositTotal:
+            _isMultiHousehold && _priorDepositSource != 'UNKNOWN' ? _parseInt(_priorDeposit.text) : null,
+        buildingPrice: _isMultiHousehold ? _parseInt(_buildingPrice.text) : null,
+        violationBuilding: _violationBuilding.isEmpty ? null : _violationBuilding,
+        landFiles: _isMultiHousehold ? List.of(_landFiles) : const [],
+        roomCount: _isMultiHousehold ? _parseInt(_roomCount.text) : null,
       ));
       if (!mounted) return;
       Navigator.of(context).push(MaterialPageRoute(
@@ -272,6 +307,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                   const SizedBox(height: 22),
                   const FieldLabel('부동산 유형', required: true),
                   _dropdown(_propertyType, _propertyTypes, (v) => setState(() => _propertyType = v)),
+                  if (_isMultiHousehold) ...[const SizedBox(height: 12), const _MultiHouseholdWarning()],
                   const SizedBox(height: 18),
                   const FieldLabel('계약 형태', required: true),
                   _dropdown(_contractType, _contractTypes, (v) => setState(() => _contractType = v)),
@@ -296,22 +332,117 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                       validator: (v) => (_parseInt(v ?? '') ?? 0) > 0 ? null : '월세를 입력해주세요.',
                     ),
                   ],
+                  if (_isMultiHousehold) ...[
+                    const SizedBox(height: 18),
+                    const FieldLabel('먼저 들어온 세입자 보증금, 어떻게 확인하셨나요?',
+                        required: true, help: '서류로 확인하지 않았다면 계산 결과와 상관없이 위험으로 표시해드려요.'),
+                    DropdownButtonFormField<String>(
+                      initialValue: _priorDepositSource,
+                      isExpanded: true,
+                      hint: const Text('선택해주세요'),
+                      items: [
+                        for (final e in _priorDepositSources.entries)
+                          DropdownMenuItem(value: e.key, child: Text(e.value, overflow: TextOverflow.ellipsis)),
+                      ],
+                      onChanged: (v) => setState(() => _priorDepositSource = v),
+                      validator: (v) => v == null ? '확인 방법을 골라주세요.' : null,
+                      borderRadius: BorderRadius.circular(12),
+                      dropdownColor: Colors.white,
+                    ),
+                    if (_priorDepositSource != 'UNKNOWN') ...[
+                      const SizedBox(height: 18),
+                      const FieldLabel('먼저 들어온 세입자 보증금 합계 (원)',
+                          required: true,
+                          help: '나보다 먼저 전입·확정일자를 받은 세입자들의 보증금을 모두 더한 금액이에요. 없으면 0을 입력하세요.'),
+                      TextFormField(
+                        controller: _priorDeposit,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: digitsOnly,
+                        decoration: const InputDecoration(hintText: '예: 300000000'),
+                        validator: (v) => _parseInt(v ?? '') != null ? null : '금액을 입력해주세요. 없으면 0을 입력하세요.',
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    const FieldLabel('건물 전체 방(호실) 수',
+                        required: false,
+                        help: '비워두시면 건축물대장 가구수로 계산해요. 실제 방이 더 많아 보이면(방 쪼개기) 직접 세어서 입력해주세요. '
+                            '나중에 들어올 소액임차인이 먼저 받아갈 수 있는 금액을 계산하는 데 써요.'),
+                    TextFormField(
+                      controller: _roomCount,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: digitsOnly,
+                      decoration: const InputDecoration(hintText: '예: 8'),
+                    ),
+                    const SizedBox(height: 18),
+                    const FieldLabel('토지 등기부등본',
+                        required: false,
+                        help: '다가구주택은 건물과 토지 등기부가 따로 있어요. 토지 등기부도 올리시면 토지에만 걸린 근저당·압류와 '
+                            '토지 소유자가 건물 소유자와 같은지까지 확인해드려요.'),
+                    PillButton(
+                        label: '토지 등기부 선택',
+                        onPressed: _loading ? null : () => _chooseFiles(_landFiles),
+                        filled: false,
+                        height: 44),
+                    for (final (i, f) in _landFiles.indexed)
+                      Container(
+                        margin: const EdgeInsets.only(top: 6),
+                        padding: const EdgeInsets.only(left: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.zinc50,
+                          border: Border.all(color: AppColors.zinc200),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(children: [
+                          Expanded(
+                            child: Text('${i + 1}. ${f.name}',
+                                overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13)),
+                          ),
+                          TextButton(
+                            onPressed: _loading ? null : () => setState(() => _landFiles.removeAt(i)),
+                            child: const Text('삭제', style: TextStyle(fontSize: 13, color: AppColors.zinc500)),
+                          ),
+                        ]),
+                      ),
+                    const SizedBox(height: 18),
+                    const FieldLabel('건물 전체 시세 (원)',
+                        required: false,
+                        help: '다가구는 실거래가로 이 건물 시세를 찾을 수 없어 직접 입력받아요. 비워두시면 공시가격으로 계산하는데, '
+                            '공시가격은 보통 실제 시세보다 낮아 보수적인 결과가 나와요.'),
+                    TextFormField(
+                      controller: _buildingPrice,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: digitsOnly,
+                      decoration: const InputDecoration(hintText: '예: 1500000000'),
+                    ),
+                    const SizedBox(height: 12),
+                    CheckboxListTile(
+                      value: _multiHouseholdAcknowledged,
+                      onChanged: (v) => setState(() => _multiHouseholdAcknowledged = v ?? false),
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: AppColors.orange500,
+                      title: Text(keepAll('결과가 입력한 값에 따라 달라지고, 서비스가 입력값을 확인하지 않는다는 점을 이해했어요.'),
+                          style: const TextStyle(fontSize: 13, height: 1.5)),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   const Divider(),
                   const SizedBox(height: 20),
                   Text(keepAll('여기부터는 몰라도 괜찮아요. 다만 알려주시면 훨씬 더 정확하게 확인해드릴 수 있어요.'),
                       style: TextStyle(fontSize: 14, height: 1.5, color: AppColors.zinc500)),
-                  const SizedBox(height: 18),
-                  const FieldLabel('단지/건물명', required: false, help: '단지명까지 알려주시면 시세를 더 정확하게 찾아드릴 수 있어요.'),
-                  TextFormField(controller: _buildingName, decoration: const InputDecoration(hintText: '예: 반포자이')),
-                  const SizedBox(height: 18),
-                  const FieldLabel('전용면적 (㎡)',
-                      required: false, help: '전용면적까지 알려주시면 같은 평수 거래만 골라서 비교해드려요.'),
-                  TextFormField(
-                    controller: _area,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(hintText: '예: 84.99'),
-                  ),
+                  if (!_isMultiHousehold) ...[
+                    const SizedBox(height: 18),
+                    const FieldLabel('단지/건물명', required: false, help: '단지명까지 알려주시면 시세를 더 정확하게 찾아드릴 수 있어요.'),
+                    TextFormField(controller: _buildingName, decoration: const InputDecoration(hintText: '예: 반포자이')),
+                    const SizedBox(height: 18),
+                    const FieldLabel('전용면적 (㎡)',
+                        required: false, help: '전용면적까지 알려주시면 같은 평수 거래만 골라서 비교해드려요.'),
+                    TextFormField(
+                      controller: _area,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      decoration: const InputDecoration(hintText: '예: 84.99'),
+                    ),
+                  ],
                   const SizedBox(height: 18),
                   const FieldLabel('계약서상 임대인 이름',
                       required: false, help: '임대인 이름까지 적어주시면 등기부상 소유자와 같은 사람인지 확인해드려요.'),
@@ -323,6 +454,12 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                     controller: _address,
                     decoration: const InputDecoration(hintText: '예: 서울특별시 강남구 테스트로 123 101동 501호'),
                   ),
+                  const SizedBox(height: 18),
+                  const FieldLabel('건축물대장 위반건축물 표시',
+                      required: false,
+                      help: "정부24에서 건축물대장을 무료로 열람하면 첫 장 위쪽에 '위반건축물' 표시가 있는지 볼 수 있어요. "
+                          '이 정보는 공공 API로 받을 수 없어 직접 확인해주셔야 해요.'),
+                  _dropdown(_violationBuilding, _violationBuildingAnswers, (v) => setState(() => _violationBuilding = v)),
                   if (_error != null) ...[const SizedBox(height: 18), NoticeBox(_error!)],
                   const SizedBox(height: 24),
                   PillButton(label: _loading ? '분석 중...' : '분석하기', loading: _loading, onPressed: _submit),
@@ -333,6 +470,45 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                   textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: AppColors.zinc400)),
             ],
           ),
+    );
+  }
+}
+
+/// 다가구주택은 먼저 들어온 세입자 보증금이 등기부에 안 나와서, 입력값에만 의존한다는 걸 분명히 알린다 (웹과 같은 문구).
+class _MultiHouseholdWarning extends StatelessWidget {
+  const _MultiHouseholdWarning();
+
+  @override
+  Widget build(BuildContext context) {
+    const bodyStyle = TextStyle(fontSize: 13, height: 1.5, color: AppColors.red950);
+    Widget bullet(String text) => Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('•  ', style: bodyStyle),
+            Expanded(child: Text(keepAll(text), style: bodyStyle)),
+          ]),
+        );
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.red50,
+        border: Border.all(color: AppColors.red500, width: 1.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(keepAll('⚠️ 다가구주택은 등기부만으로 안전한지 알 수 없어요'),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.red800)),
+        bullet('건물 전체에 등기부가 하나뿐이라, 나보다 먼저 들어온 세입자들의 보증금이 등기부에 나오지 않아요. '
+            '경매로 넘어가면 이 보증금이 내 보증금보다 먼저 배당돼요.'),
+        bullet('그래서 이 결과는 직접 입력하신 선순위 보증금과 건물 시세가 정확하다는 전제에서만 의미가 있어요. '
+            "서비스는 입력값을 확인하지 않고, 결과가 좋아도 '안전'으로 판정하지 않아요."),
+        bullet('다가구 전세사기는 임대인이 선순위 보증금을 줄여 말하는 방식으로 자주 일어나요. 임대인 동의를 받아 '
+            '주민센터에서 전입세대 열람내역서·확정일자 부여현황을 꼭 직접 확인하세요.'),
+        const SizedBox(height: 8),
+        Text(keepAll('원룸이라도 등기부 첫 줄이 [집합건물]로 시작하면 다가구가 아니라 빌라나 오피스텔이에요. 그 유형으로 골라주세요.'),
+            style: const TextStyle(fontSize: 12, height: 1.5, color: AppColors.red800)),
+      ]),
     );
   }
 }

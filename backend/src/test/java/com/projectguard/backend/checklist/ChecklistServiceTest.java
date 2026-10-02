@@ -1,5 +1,7 @@
 package com.projectguard.backend.checklist;
 
+import com.projectguard.backend.common.PropertyType;
+import com.projectguard.backend.common.ViolationBuildingAnswer;
 import com.projectguard.backend.common.ContractType;
 import com.projectguard.backend.registry.MortgageEntry;
 import com.projectguard.backend.registry.RegistryAnalysis;
@@ -71,5 +73,26 @@ class ChecklistServiceTest {
 
         assertFalse(hasItem(items, "선순위 채권 잔액 확인"));
         assertFalse(hasItem(items, "압류·가처분 해소 여부 확인"));
+    }
+
+    @Test
+    void 다가구주택이면_확정일자_부여현황과_토지_등기부_확인_항목이_추가된다() {
+        List<ChecklistItem> items = service.generate(emptyRegistry(), ContractType.JEONSE, PropertyType.MULTI_HOUSEHOLD);
+
+        assertTrue(hasItem(items, "확정일자 부여현황 확인 (다가구 필수)"));
+        assertTrue(hasItem(items, "토지 등기부등본 확인 (다가구 필수)"));
+        assertFalse(hasItem(service.generate(emptyRegistry(), ContractType.JEONSE), "토지 등기부등본 확인 (다가구 필수)"));
+    }
+
+    @Test
+    void 위반건축물_표시가_없다고_확인했을_때만_확인_항목을_뺀다() {
+        String title = "건축물대장 위반건축물 표시 확인";
+        assertTrue(hasItem(service.generate(emptyRegistry(), ContractType.JEONSE), title));
+        assertTrue(hasItem(service.generate(
+                emptyRegistry(), ContractType.JEONSE, PropertyType.VILLA, ViolationBuildingAnswer.UNKNOWN), title));
+        assertTrue(hasItem(service.generate(
+                emptyRegistry(), ContractType.JEONSE, PropertyType.VILLA, ViolationBuildingAnswer.MARKED), title));
+        assertFalse(hasItem(service.generate(
+                emptyRegistry(), ContractType.JEONSE, PropertyType.VILLA, ViolationBuildingAnswer.NOT_MARKED), title));
     }
 }

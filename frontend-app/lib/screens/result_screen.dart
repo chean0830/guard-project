@@ -55,8 +55,8 @@ class ResultScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _Verdict(hasHighRisk: result.hasHighRisk),
-            if (result.hasHighRisk) ...[
+            _Verdict(hasHighRisk: result.hasHighRisk, isMultiHousehold: result.isMultiHousehold),
+            if (result.hasHighRisk || result.isMultiHousehold) ...[
               const SizedBox(height: 12),
               _LawyerCta(onTap: () {
                 Navigator.of(context).pop();
@@ -105,15 +105,40 @@ class ResultScreen extends StatelessWidget {
             _Section('등기부 요약'),
             _InfoRow('주소', registry.address ?? '인식 실패'),
             _InfoRow('고유번호', registry.uniqueNumber ?? '인식 실패'),
-            _InfoRow('조회된 시세',
-                result.marketPrice != null ? _won(result.marketPrice) : '조회 실패 (실거래 내역 없음)'),
+            _InfoRow(
+                result.isMultiHousehold ? '입력하신 건물 시세' : '조회된 시세',
+                result.marketPrice != null
+                    ? _won(result.marketPrice)
+                    : result.isMultiHousehold
+                        ? '입력 안 함'
+                        : '조회 실패 (실거래 내역 없음)'),
+            if (result.isMultiHousehold)
+              _InfoRow(
+                  result.officialHousePrice != null ? '공시가격 (${result.officialHousePrice!.year}년)' : '공시가격',
+                  result.officialHousePrice != null
+                      ? _won(result.officialHousePrice!.price) +
+                          (result.marketPrice == null ? ' · 시세 미입력이라 이 값으로 계산 (보수적)' : '')
+                      : '조회 실패'),
             _InfoRow('활성 근저당 합계', _won(registry.totalActiveMortgageAmount)),
+            if (result.landRegistry != null) ...[
+              _Section('토지 등기부 요약'),
+              _InfoRow('토지 주소', result.landRegistry!.address ?? '인식 실패'),
+              _InfoRow('토지 소유자',
+                  result.landRegistry!.ownershipHistory.where((e) => !e.cancelled).lastOrNull?.ownerName ?? '인식 실패'),
+              _InfoRow('토지 활성 근저당 합계', _won(result.landRegistry!.totalActiveMortgageAmount)),
+              _InfoRow('말소되지 않은 압류·가압류', '${result.landRegistry!.seizures.where((s) => !s.cancelled).length}건'),
+              const SizedBox(height: 4),
+              Text(keepAll('건물과 토지에 같이 설정된 근저당(공동담보)은 위험 계산에서 한 번만 셌어요.'),
+                  style: const TextStyle(fontSize: 12, color: AppColors.zinc500)),
+            ],
             _Section('건축물대장 정보'),
             if (building == null)
               const _Empty('건축물대장에서 조회되지 않았습니다. 등록되지 않은 건물이거나 주소 조회에 실패했을 수 있어요.')
             else ...[
               _InfoRow('건물명', building.buildingName ?? '정보 없음'),
               _InfoRow('주용도', building.mainPurpose ?? '정보 없음'),
+              _InfoRow('기타 용도', building.etcPurpose ?? '정보 없음'),
+              if (building.familyCount != null) _InfoRow('가구수', '${building.familyCount}가구'),
               _InfoRow('구조', building.structureType ?? '정보 없음'),
               _InfoRow('사용승인일', building.useApprovalDate ?? '정보 없음'),
               _InfoRow('연면적',
@@ -154,11 +179,36 @@ class ResultScreen extends StatelessWidget {
 
 class _Verdict extends StatelessWidget {
   final bool hasHighRisk;
+  final bool isMultiHousehold;
 
-  const _Verdict({required this.hasHighRisk});
+  const _Verdict({required this.hasHighRisk, required this.isMultiHousehold});
 
   @override
   Widget build(BuildContext context) {
+    // 다가구주택은 입력값에만 의존하는 결과라, 위험 신호가 없어도 "안전"으로 보여주지 않는다.
+    if (!hasHighRisk && isMultiHousehold) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.amber50,
+          border: Border.all(color: AppColors.amber500, width: 2),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(children: [
+          const Icon(Icons.warning_amber_rounded, size: 40, color: AppColors.amber500),
+          const SizedBox(height: 8),
+          const Text('조건부 결과예요. 안전하다는 뜻이 아니에요',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.amber900)),
+          const SizedBox(height: 6),
+          Text(
+              keepAll('다가구주택은 먼저 들어온 세입자 보증금이 등기부에 나오지 않아, 이 결과는 입력하신 선순위 보증금과 '
+                  '건물 시세가 정확할 때만 의미가 있어요. 계약 전에 전입세대 열람내역서·확정일자 부여현황을 꼭 직접 확인하세요.'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14, height: 1.5, color: AppColors.amber900)),
+        ]),
+      );
+    }
     if (!hasHighRisk) {
       return Container(
         padding: const EdgeInsets.all(20),

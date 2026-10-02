@@ -19,7 +19,14 @@ import java.util.regex.Pattern;
 @Component
 public class RegistryParser {
 
-    private static final Pattern ADDRESS_PATTERN = Pattern.compile("\\[집합건물]\\s*(.+)");
+    // 아파트·오피스텔·빌라는 "[집합건물]", 다가구주택(단독주택)은 "[건물]", 토지 등기부는 "[토지]"로 시작한다.
+    private static final Pattern ADDRESS_PATTERN = Pattern.compile("\\[(?:집합건물|건물|토지)]\\s*(.+)");
+    // 등기부 종류 표시. 첫 줄 "[집합건물] 주소"와 제목 아래 "- 집합건물 -" 둘 다 확인한다 (OCR이 한쪽을 놓칠 수 있음).
+    // 집합건물에만 있는 표제부 부제(전유부분·대지권)도 보조 기준으로 쓴다.
+    private static final Pattern COLLECTIVE_BUILDING_MARK =
+            Pattern.compile("\\[\\s*집합\\s*건물\\s*]|-\\s*집합\\s*건물\\s*-|전유부분의\\s*건물의\\s*표시|대지권의\\s*표시");
+    private static final Pattern BUILDING_MARK = Pattern.compile("\\[\\s*건물\\s*]|-\\s*건물\\s*-");
+    private static final Pattern LAND_MARK = Pattern.compile("\\[\\s*토지\\s*]|-\\s*토지\\s*-");
     private static final Pattern UNIQUE_NUMBER_PATTERN = Pattern.compile("고유번호\\s*(\\S+)");
     private static final Pattern TITLE_PATTERN = Pattern.compile("등기사항전부증명서");
 
@@ -92,7 +99,15 @@ public class RegistryParser {
                 .mapToLong(MortgageEntry::maxClaimAmount)
                 .sum();
 
-        return new RegistryAnalysis(address, uniqueNumber, ownershipHistory, mortgages, seizures, totalActiveMortgageAmount);
+        return new RegistryAnalysis(address, uniqueNumber, ownershipHistory, mortgages, seizures,
+                totalActiveMortgageAmount, detectKind(mainBody));
+    }
+
+    private RegistryKind detectKind(String text) {
+        if (COLLECTIVE_BUILDING_MARK.matcher(text).find()) return RegistryKind.COLLECTIVE_BUILDING;
+        if (BUILDING_MARK.matcher(text).find()) return RegistryKind.BUILDING;
+        if (LAND_MARK.matcher(text).find()) return RegistryKind.LAND;
+        return RegistryKind.UNKNOWN;
     }
 
     private String cutBeforeSummary(String rawText) {
@@ -153,7 +168,7 @@ public class RegistryParser {
         if (line.startsWith("순위번호")) return true;
         if (line.startsWith("열 람 용") || line.startsWith("열람일시")) return true;
         if (line.matches("^\\d+/\\d+$")) return true;
-        if (line.startsWith("[집합건물]")) return true;
+        if (line.startsWith("[집합건물]") || line.startsWith("[건물]") || line.startsWith("[토지]")) return true;
         if (line.startsWith("고유번호")) return true;
         if (line.startsWith("관할등기소")) return true;
         if (line.startsWith("*")) return true;

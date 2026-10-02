@@ -3,13 +3,18 @@ package com.projectguard.backend.api;
 import com.projectguard.backend.checklist.ChecklistItem;
 import com.projectguard.backend.checklist.ChecklistService;
 import com.projectguard.backend.common.ContractType;
+import com.projectguard.backend.common.PriorDepositSource;
+import com.projectguard.backend.common.ViolationBuildingAnswer;
 import com.projectguard.backend.common.PropertyType;
 import com.projectguard.backend.market.BuildingInfo;
 import com.projectguard.backend.market.BuildingRegisterService;
 import com.projectguard.backend.market.MarketPriceService;
+import com.projectguard.backend.market.OfficialHousePrice;
+import com.projectguard.backend.market.OfficialHousePriceService;
 import com.projectguard.backend.registry.NotRegistryDocumentException;
 import com.projectguard.backend.registry.RegistryAnalysis;
 import com.projectguard.backend.registry.RegistryAnalysisService;
+import com.projectguard.backend.registry.RegistryKind;
 import com.projectguard.backend.registry.UploadedPage;
 import com.projectguard.backend.risk.RiskAssessmentInput;
 import com.projectguard.backend.risk.RiskAssessmentResult;
@@ -44,11 +49,16 @@ public class AnalyzeController {
 
     private static final String DISCLAIMER = "이 서비스는 법률 조언이 아니며 참고용 정보입니다.";
 
+    private static final String MULTI_HOUSEHOLD_DISCLAIMER = DISCLAIMER
+            + " 다가구주택은 먼저 들어온 세입자 보증금이 등기부에 나오지 않아, 이 결과는 직접 입력하신 선순위 보증금과"
+            + " 건물 시세가 정확하다는 전제에서만 의미가 있습니다. 서비스는 입력값을 확인하지 않으며, 안전하다고 판정하지 않습니다.";
+
     private final RegistryAnalysisService registryAnalysisService;
     private final MarketPriceService marketPriceService;
     private final BuildingRegisterService buildingRegisterService;
     private final RiskAssessmentService riskAssessmentService;
     private final ChecklistService checklistService;
+    private final OfficialHousePriceService officialHousePriceService;
 
     public AnalyzeController(
             RegistryAnalysisService registryAnalysisService,
@@ -56,7 +66,8 @@ public class AnalyzeController {
             BuildingRegisterService buildingRegisterService,
             RiskAssessmentService riskAssessmentService,
             ChecklistService checklistService,
-            AnalysisAccessService analysisAccessService
+            AnalysisAccessService analysisAccessService,
+            OfficialHousePriceService officialHousePriceService
     ) {
         this.registryAnalysisService = registryAnalysisService;
         this.marketPriceService = marketPriceService;
@@ -64,6 +75,7 @@ public class AnalyzeController {
         this.riskAssessmentService = riskAssessmentService;
         this.checklistService = checklistService;
         this.analysisAccessService = analysisAccessService;
+        this.officialHousePriceService = officialHousePriceService;
     }
 
     @PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -77,6 +89,12 @@ public class AnalyzeController {
             @RequestParam(value = "exclusiveAreaSqm", required = false) Double exclusiveAreaSqm,
             @RequestParam(value = "declaredLandlordName", required = false) String declaredLandlordName,
             @RequestParam(value = "declaredAddress", required = false) String declaredAddress,
+            @RequestParam(value = "priorDepositTotal", required = false) Long priorDepositTotal,
+            @RequestParam(value = "priorDepositSource", required = false) PriorDepositSource priorDepositSource,
+            @RequestParam(value = "buildingPrice", required = false) Long buildingPrice,
+            @RequestParam(value = "violationBuilding", required = false) ViolationBuildingAnswer violationBuilding,
+            @RequestParam(value = "landFiles", required = false) List<MultipartFile> landFiles,
+            @RequestParam(value = "roomCount", required = false) Integer roomCount,
             @RequestHeader(value = "Authorization", required = false) String authorization
     ) throws IOException {
         if (files == null || files.isEmpty()) {
@@ -84,27 +102,79 @@ public class AnalyzeController {
         }
         AnalysisAccessService.Access access = analysisAccessService.authorize(bearer(authorization));
 
-        List<UploadedPage> pages = new ArrayList<>();
-        for (MultipartFile file : files) {
-            pages.add(new UploadedPage(file.getBytes(), file.getContentType()));
-        }
+        boolean multiHousehold = propertyType == PropertyType.MULTI_HOUSEHOLD;
+        List<UploadedPage> pages = toPages(files);
 
         RegistryAnalysis registry = registryAnalysisService.analyze(pages);
 
-        Long marketPrice = marketPriceService
-                .lookupMarketPrice(propertyType, registry.address(), buildingName, exclusiveAreaSqm)
-                .orElse(null);
+        // 다가구주택은 토지 등기부를 함께 올릴 수 있다 (토지에만 걸린 근저당·압류 확인용).
+        RegistryAnalysis landRegistry = multiHouseholdLandRegistry(propertyType, landFiles);
+
+        // 다가구주택은 시세를 자동 조회하지 않고 사용자가 입력한 건물 전체 시세를 쓴다 (MarketPriceService 참고).
+        Long marketPrice = multiHousehold
+                ? buildingPrice
+                : marketPriceService
+                        .lookupMarketPrice(propertyType, registry.address(), buildingName, exclusiveAreaSqm)
+                        .orElse(null);
 
         BuildingInfo buildingInfo = buildingRegisterService.lookup(registry.address()).orElse(null);
 
-        RiskAssessmentResult result = riskAssessmentService.assess(new RiskAssessmentInput(
-                registry, contractType, depositAmount, monthlyRent, marketPrice, declaredLandlordName, declaredAddress));
+        // 공시가격(개별주택가격)은 단독·다가구주택에만 있다.
+        OfficialHousePrice officialHousePrice = multiHousehold
+                ? officialHousePriceService.lookup(registry.address()).orElse(null)
+                : null;
 
-        List<ChecklistItem> checklist = checklistService.generate(registry, contractType);
+        RiskAssessmentResult result = riskAssessmentService.assess(new RiskAssessmentInput(
+                registry, contractType, depositAmount, monthlyRent, marketPrice, declaredLandlordName, declaredAddress,
+                propertyType,
+                multiHousehold ? priorDepositTotal : null,
+                multiHousehold ? priorDepositSource : null,
+                buildingInfo,
+                violationBuilding,
+                officialHousePrice,
+                landRegistry,
+                multiHousehold ? roomCount : null));
+
+        List<ChecklistItem> checklist = checklistService.generate(
+                registry, contractType, propertyType, violationBuilding, landRegistry != null);
 
         analysisAccessService.complete(access);
         return new AnalyzeResponse(
-                registry, marketPrice, buildingInfo, result.signals(), result.hasHighRisk(), checklist, DISCLAIMER);
+                propertyType, registry, landRegistry, marketPrice, officialHousePrice, buildingInfo, result.signals(),
+                result.hasHighRisk(), checklist,
+                multiHousehold ? MULTI_HOUSEHOLD_DISCLAIMER : DISCLAIMER);
+    }
+
+    private List<UploadedPage> toPages(List<MultipartFile> files) throws IOException {
+        List<UploadedPage> pages = new ArrayList<>();
+        for (MultipartFile file : files) {
+            if (file.isEmpty()) {
+                continue;
+            }
+            pages.add(new UploadedPage(file.getBytes(), file.getContentType()));
+        }
+        return pages;
+    }
+
+    private RegistryAnalysis multiHouseholdLandRegistry(PropertyType propertyType, List<MultipartFile> landFiles)
+            throws IOException {
+        if (propertyType != PropertyType.MULTI_HOUSEHOLD || landFiles == null) {
+            return null;
+        }
+        List<UploadedPage> landPages = toPages(landFiles);
+        if (landPages.isEmpty()) {
+            return null;
+        }
+        RegistryAnalysis land;
+        try {
+            land = registryAnalysisService.analyze(landPages);
+        } catch (NotRegistryDocumentException e) {
+            throw new NotRegistryDocumentException("토지 등기부등본으로 올리신 파일이 등기부등본이 아닌 것 같습니다. 토지 등기부등본 PDF를 올려주세요.");
+        }
+        if (land.registryKind() == RegistryKind.BUILDING || land.registryKind() == RegistryKind.COLLECTIVE_BUILDING) {
+            throw new NotRegistryDocumentException("토지 등기부등본 칸에 건물 등기부등본을 올리셨어요. 인터넷등기소에서 '토지' 등기부등본을 발급받아 올려주세요.");
+        }
+        return land;
     }
 
     private static String bearer(String authorization) {

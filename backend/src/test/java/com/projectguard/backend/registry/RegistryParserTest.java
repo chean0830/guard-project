@@ -123,4 +123,39 @@ class RegistryParserTest {
         assertEquals("근저당권자D", second.mortgageeName());
         assertFalse(second.cancelled());
     }
+
+    @Test
+    void 다가구주택_건물_등기부의_주소도_추출한다() throws IOException {
+        String buildingRegistry = loadSample()
+                .replace("- 집합건물 -", "- 건물 -")
+                .replace("[집합건물] 서울특별시 강남구 테스트로 123 테스트아파트 제101동 제5층 제501호",
+                        "[건물] 서울특별시 관악구 테스트로 45");
+
+        RegistryAnalysis result = parser.parse(buildingRegistry);
+
+        assertEquals("서울특별시 관악구 테스트로 45", result.address());
+        assertEquals(RegistryKind.BUILDING, result.registryKind());
+        assertEquals(1, result.ownershipHistory().size());
+        assertFalse(result.mortgages().isEmpty());
+    }
+
+    @Test
+    void 등기부_종류를_구분한다() throws IOException {
+        assertEquals(RegistryKind.COLLECTIVE_BUILDING, parser.parse(loadSample()).registryKind());
+
+        String land = loadSample()
+                .replace("- 집합건물 -", "- 토지 -")
+                .replace("[집합건물]", "[토지]")
+                .replace("( 1동의 건물의 표시 )", "( 토지의 표시 )");
+        assertEquals(RegistryKind.LAND, parser.parse(land).registryKind());
+        assertEquals("서울특별시 강남구 테스트로 123 테스트아파트 제101동 제5층 제501호", parser.parse(land).address());
+    }
+
+    @Test
+    void 종류_표시가_없으면_UNKNOWN() throws IOException {
+        String noMark = loadSample()
+                .replace("- 집합건물 -", "")
+                .replace("[집합건물]", "");
+        assertEquals(RegistryKind.UNKNOWN, parser.parse(noMark).registryKind());
+    }
 }
