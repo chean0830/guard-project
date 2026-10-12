@@ -1,92 +1,210 @@
-# Project Guard — 전/월세 사기 방지 프로그램
+<div align="center">
 
-계약 전 등기부등본을 업로드(또는 촬영)하면 위험 요소를 자동으로 분석해 쉬운 말로 알려주는 서비스.
+# 🛡️ Project Guard
 
-- 기획 배경 및 전체 스펙: [docs/기획서.md](docs/기획서.md)
-- 기획서 대비 실제 개발 결정사항: [docs/결정사항.md](docs/결정사항.md)
+**등기부등본을 올리면 위험 신호를 근거와 함께 알려주는 전·월세 사기 예방 서비스**
 
-## 기술 스택
+<br>
 
-| 영역 | 기술 | 상태 |
-|---|---|---|
-| 백엔드 | Spring (Java) | 뼈대 생성 완료 |
-| 웹 프론트 | Next.js | 뼈대 생성 완료 |
-| 앱 프론트 | Flutter | 착수 (회원 분석 · 변호사 상담 관리) |
-| OCR | Google Cloud Vision API | 키 발급 완료 |
+<img src="docs/badges/java-25-000000.svg" />
+<img src="docs/badges/spring-boot-4-6db33f.svg" />
+<img src="docs/badges/jpa-59666c.svg" />
+<img src="docs/badges/websocket-010101.svg" />
+<img src="docs/badges/pdfbox-3-d22128.svg" />
+<img src="docs/badges/google-cloud-vision-4285f4.svg" />
+<br>
+<img src="docs/badges/next-js-16-000000.svg" />
+<img src="docs/badges/react-19-61dafb.svg" />
+<img src="docs/badges/typescript-3178c6.svg" />
+<img src="docs/badges/tailwind-css-4-06b6d4.svg" />
+<img src="docs/badges/playwright-2ead33.svg" />
+<br>
+<img src="docs/badges/flutter-02569b.svg" />
+<img src="docs/badges/firebase-fcm-dd2c00.svg" />
+<img src="docs/badges/toss-payments-0064ff.svg" />
 
-## 폴더 구조
+</div>
+
+<br>
+
+## 📑 프로젝트 포트폴리오
+
+<div align="center">
+  <img src="docs/portfolio/slide-01.jpg" width="800" />
+</div>
+
+<div align="center">
+
+[📥 포트폴리오 PDF 내려받기](docs/portfolio/ProjectGuard_Portfolio.pdf)
+
+</div>
+
+<details>
+<summary><b>01. 프로젝트 개요</b></summary>
+<br>
+
+<img src="docs/portfolio/slide-02.jpg" width="800" />
+<img src="docs/portfolio/slide-03.jpg" width="800" />
+<img src="docs/portfolio/slide-04.jpg" width="800" />
+<img src="docs/portfolio/slide-05.jpg" width="800" />
+<img src="docs/portfolio/slide-06.jpg" width="800" />
+
+</details>
+
+<details>
+<summary><b>02. 설계와 기술</b></summary>
+<br>
+
+<img src="docs/portfolio/slide-07.jpg" width="800" />
+<img src="docs/portfolio/slide-08.jpg" width="800" />
+<img src="docs/portfolio/slide-09.jpg" width="800" />
+<img src="docs/portfolio/slide-10.jpg" width="800" />
+
+</details>
+
+<details>
+<summary><b>03. 핵심 기능</b></summary>
+<br>
+
+<img src="docs/portfolio/slide-11.jpg" width="800" />
+<img src="docs/portfolio/slide-12.jpg" width="800" />
+<img src="docs/portfolio/slide-13.jpg" width="800" />
+<img src="docs/portfolio/slide-14.jpg" width="800" />
+<img src="docs/portfolio/slide-15.jpg" width="800" />
+<img src="docs/portfolio/slide-16.jpg" width="800" />
+<img src="docs/portfolio/slide-17.jpg" width="800" />
+<img src="docs/portfolio/slide-18.jpg" width="800" />
+<img src="docs/portfolio/slide-19.jpg" width="800" />
+<img src="docs/portfolio/slide-20.jpg" width="800" />
+
+</details>
+
+<details>
+<summary><b>04. 트러블슈팅</b></summary>
+<br>
+
+<img src="docs/portfolio/slide-21.jpg" width="800" />
+<img src="docs/portfolio/slide-22.jpg" width="800" />
+<img src="docs/portfolio/slide-23.jpg" width="800" />
+<img src="docs/portfolio/slide-24.jpg" width="800" />
+<img src="docs/portfolio/slide-25.jpg" width="800" />
+
+</details>
+
+<details>
+<summary><b>05. 평가와 개선</b></summary>
+<br>
+
+<img src="docs/portfolio/slide-26.jpg" width="800" />
+<img src="docs/portfolio/slide-27.jpg" width="800" />
+<img src="docs/portfolio/slide-28.jpg" width="800" />
+
+</details>
+
+<br>
+
+## 📌 주요 기능
+
+| 분류 | 기능 |
+| --- | --- |
+| 📄 **등기부 판독** | PDF 업로드(PDFBox), 촬영 이미지 여러 장 OCR(Google Cloud Vision), 표제부·갑구·을구 구조화 |
+| 🚨 **위험 판단** | 규칙 16개 — 선순위 채권 비율, 전세가율·월세 환산, 압류·소유자 불일치, 소액임차인 최우선변제 등. 신호마다 근거 유형(사실 확인·법적 기준·정부 권고) 표시 |
+| 🏢 **공공데이터** | 국토부 실거래가(아파트·오피스텔·연립다세대), 건축물대장 표제부·층별개요, 도로명주소, 브이월드 공시가격 |
+| 🏠 **다가구 조건부 분석** | 선순위 보증금 직접 입력, 토지 등기부 함께 분석, HUG 반환보증 가입 가능성 추정 — '안전' 판정은 내리지 않음 |
+| ✅ **체크리스트** | 계약 형태·권리관계에 따라 달라지는 직접 확인 항목 안내 |
+| ⚖️ **변호사 상담** | 관리자 승인을 거친 변호사와 1:1 실시간 채팅(WebSocket), 신고·이용 정지·개인 차단 |
+| 💳 **결제** | 토스페이먼츠 — 분석 이용권(990원), 변호사 직접 선택(2,900원), 결제 취소·환불 |
+| 🔔 **알림** | 이메일, 웹 푸시(VAPID), 앱 푸시(FCM) |
+| 👤 **회원** | 이메일 인증 가입, 구글·카카오·네이버 소셜 로그인, 비밀번호 찾기, 회원 탈퇴 |
+| 🛠 **관리자** | 변호사 승인, 신고·회원·결제 관리 (웹·앱 공통) |
+
+<br>
+
+## 🏗 구조
 
 ```
-backend/        Spring 서버 (서류 분석, 위험 판단, 시세 비교)
-frontend-web/   Next.js 웹
-frontend-app/   Flutter 앱 (iOS/Android, 웹과 같은 백엔드 API 사용)
-docs/           기획서, 결정사항, 기타 문서
+guard-project
+├── backend/        # Spring Boot 서버 (:8080) — 등기부 판독, 위험 판단, 시세 조회, 인증, 상담, 결제
+├── frontend-web/   # Next.js 웹 (:3000)
+├── frontend-app/   # Flutter 앱 (iOS / Android), 웹과 같은 백엔드 API 사용
+└── docs/           # 기획서, 개발 결정사항, 포트폴리오
 ```
 
-## 대상 부동산 유형
+- 분석 로직은 Spring 서버 한 곳에만 있고, 웹과 앱은 같은 REST API를 호출합니다.
+- 위험 판단은 `RiskRule` 인터페이스를 구현한 규칙들을 `List<RiskRule>`로 주입받아 각각 평가합니다. 규칙을 추가해도 엔진 코드는 바뀌지 않습니다.
+- 실시간 채팅은 WebSocket으로 주고받으며, 브라우저는 Next.js 서버가 발급받은 1회용 입장권으로만 접속합니다.
+- 업로드한 등기부등본 원본은 메모리에서만 처리하고 저장하지 않습니다.
 
-아파트, 오피스텔, 빌라(연립·다세대) 지원. 원룸·다가구주택은 조건부 지원 — 먼저 들어온 세입자 보증금을 사용자가 직접 입력하고, 결과는 "안전"으로 판정하지 않음 (사유: [docs/결정사항.md](docs/결정사항.md) 7·44번 참고)
+<br>
 
-## 현재 진행 상태
+## 🚀 실행 방법
 
-- [x] Git 개발 환경 구축
-- [x] 공공데이터포털 API 신청 (아파트 실거래가, 건축물대장, 도로명주소)
-- [x] Google Cloud Vision API 발급
-- [x] Spring 서버 뼈대 생성
-- [x] Next.js 웹 뼈대 생성
-- [x] 오피스텔·연립다세대 실거래가 API 추가 신청
-- [x] 등기부등본 샘플 확보 및 텍스트 추출 테스트 (Apache PDFBox 채택)
-- [x] 등기부등본 파싱 로직 (근저당/압류/말소/소유자 구조화)
-- [x] 위험 판단 규칙 엔진 (근거 유형별 구분: 사실확인/정부권고기준/법적기준)
-  - [x] 법적기준(LAW): 소액임차인 최우선변제금 (주택임대차보호법 시행령 제10~11조)
-- [x] 실거래가 시세 조회 서비스 (아파트, juso.go.kr + data.go.kr 연동, 라이브 검증 완료)
-- [x] 오피스텔·연립다세대 시세 조회 (아파트와 동일 패턴으로 추가, 실거래가 응답/클라이언트 공통화, 라이브 검증 완료)
-- [x] REST 엔드포인트에서 시세 조회 ↔ 위험 판단 엔진 연결 (`POST /api/analyze`, 라이브 샘플로 검증 완료)
-- [x] 카메라 촬영 이미지 OCR(Google Cloud Vision) 연동, 실제 이미지로 라이브 검증 완료
-- [x] 여러 장(페이지) 업로드 지원 (`POST /api/analyze`가 `files` 리스트를 받아 순서대로 이어붙여 파싱)
-- [x] 프론트엔드(Next.js) 업로드 화면 ↔ `/api/analyze` 연동 (Server Action 프록시, 위험신호/등기부 결과 화면 포함)
-- [x] 건축물대장(건축HUB) 표제부 조회 연동 — 건물명/주용도/구조/사용승인일/연면적, 라이브 검증 완료
-- [x] 업로드 용량 제한 설정, 외부 API 장애 시에도 분석은 계속되도록 방어 처리
-- [x] 백엔드 컨트롤러 테스트(`@WebMvcTest`), 프론트엔드 Playwright e2e 테스트 추가
-- [x] OCR 근저당 채무자/근저당권자 누락 문제 해결 (전체 스캔 보완)
-- [x] 파비콘/OpenGraph 이미지 생성, 메타데이터 정리
-- [x] 계약형태(전세/월세) 구분 — 월세는 법정 전환율로 환산해 위험 판단
-- [x] 체크리스트 기능 (기획서 P0, 전세/월세·근저당/압류 여부에 따라 항목이 달라짐)
-- [x] 계약서상 주소 대조 규칙 (`AddressMismatchRule`), 이름 대조와 함께 동작
-- [x] 회원가입/로그인 (BCrypt), 변호사 상담 기능만 로그인 요구 — 등기부 분석은 그대로 오픈
-- [x] H2 콘솔 노출 차단
-- [x] 구글/카카오/네이버 소셜 로그인 (OAuth, 이메일 기준 계정 연동)
-- [x] 변호사 회원가입/로그인 (자격 증명 서류 제출 → 관리자 승인 후에만 로그인 가능)
-- [x] 실제 승인된 변호사와 연결되는 상담 문의 시스템 (가상 변호사 데모 대체) — 회원↔변호사 대화, 새 문의 이메일 알림, 양측 프로필/설정 화면
-- [x] 문의 접수 팝업 + 변호사 답장 시 웹 푸시 알림 (VAPID, 브라우저 알림)
-- [x] 통합 관리자 페이지 `/admin` (변호사 승인 · 신고 관리 · 회원 관리), 관리자 계정 로그인(일반 로그인 화면에서 함께)
-- [x] 상담 대화 신고 기능 (신고 기준: 욕설·모욕 / 금전 요구) + 관리자 이용 정지·해제 (정지 즉시 세션 차단, 정지 변호사는 매칭 제외)
-- [x] 상담 채팅 이용 안내 팝업(신고·정지 기준, 일주일 동안 안 보기), 신고 🚨 / 차단 🚫 버튼
-- [x] 회원·변호사 개인 차단 (양쪽 메시지 차단, 매칭 제외, 설정 화면에서 차단 관리)
-- [x] 실시간 채팅 WebSocket 전환 (1회용 입장권 인증, 끊기면 자동 재연결)
-- [x] 원하는 변호사 직접 선택 유료 기능 (토스페이먼츠 결제 2,900원/회, 이용권 방식) + 변호사 강점(한 줄 강점·경력·수임료·실적) 프로필
-- [x] 공통 머리글(어디서든 로그아웃, 채팅 화면 제외), 로그인 만료 시 "로그인하시겠습니까?" 팝업
-- [x] 개발 편의: 테스트 계정·가상 변호사 10명 자동 생성, 파일 기반 개발 DB(재시작해도 데이터 유지), 한글 띄어쓰기 기준 줄바꿈
-- [x] 계정 보안: 소셜 계정은 이메일 인증된 경우만 기존 계정과 연결, 비밀번호 5회 오류 시 잠금 → 비밀번호 찾기(이메일 재설정 링크)로 해제
-- [x] 결제 내역·취소·환불 (미사용 이용권 즉시 취소, 사용한 이용권은 환불 요청 → 관리자 승인), 변호사 가입 승인/거절 메일
-- [x] 이용약관·개인정보처리방침 페이지 (운영자 정보는 채워 넣어야 함)
-- [x] 등기부 분석 이용 제한: 로그인 필요, 아이디당 무료 5회 → 이후 1회 990원 분석 이용권 (탈퇴 후 재가입해도 무료 횟수 유지)
-- [x] 비밀번호 찾기 메일 이메일당 하루 5회 제한, 재설정 링크 로그 기록은 개발 환경에서만
-- [x] 회원 탈퇴, 변호사 자격 서류는 PDF·JPG만(실제 파일 내용으로 판별), 관리자 회원/변호사 목록 20명씩 페이지 나눔·서버 검색
-- [x] 보안 헤더(클릭재킹 방지 등), 운영 환경 쿠키 secure, DB 자동 변경 설정 환경별 분리(DDL_AUTO)
-- [x] 회원가입 이메일 인증 (6자리 인증번호, 10분·5회 오답 제한, 하루 5회 발송 제한)
-- [x] 만료된 로그인 세션·인증 기록 매일 자동 정리
-- [x] 상담 목록 실시간 갱신 (변호사 문의함 `/ws/lawyer-inbox`, 회원 내 문의 내역 `/ws/user-inbox` — 새 문의·새 메시지를 목록 화면으로 즉시 알림, 웹·앱 공통)
-- [x] 원룸·다가구주택 조건부 지원 (선순위 보증금·건물 시세 직접 입력, 서류로 확인하지 않았으면 위험 표시, 경고 문구·확인 체크, 웹·앱)
-- [x] Flutter 앱 착수: 웹과 같은 디자인의 소개 → 로그인/회원가입(이메일 인증) 흐름, 등기부 분석·결과, 관리자 로그인(일반 로그인 화면), 회원 변호사 상담, 결제(분석 이용권·변호사 직접 선택·결제 내역), 관리자 콘솔, 푸시 알림(FCM), 소셜 로그인, 변호사 로그인 + 상담 관리(실시간 채팅·신고·차단·설정) — 상세는 [frontend-app/README.md](frontend-app/README.md)
+### 1. 준비물
+- Java 25, Node.js
+- 앱을 실행하려면 Flutter SDK, Android Studio
 
-## 다음 단계
+### 2. 환경변수 설정
+`backend/.env.example`을 복사해 `backend/.env`를, `frontend-web/.env.example`을 복사해 `frontend-web/.env.local`을 만들고 값을 채웁니다.
 
-- 배포 (프론트: Vercel, 백엔드: Render/Fly.io 등, PostgreSQL로 전환)
-- Flutter 앱: iOS 푸시 실기기 확인 (Apple Developer 계정·APNs 키·Firebase iOS 앱 등록 후, Mac 필요)
+| 이름 | 설명 |
+| --- | --- |
+| `DATA_GO_KR_API_KEY`, `MOLIT_*_ENDPOINT` | 국토부 실거래가 API |
+| `BUILDING_REGISTER_ENDPOINT` | 건축물대장(건축HUB) |
+| `JUSO_ADDRESS_API_KEY`, `VWORLD_API_KEY` | 도로명주소, 브이월드 공시가격 |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Google Cloud Vision 서비스 계정 키 경로 |
+| `TOSS_SECRET_KEY`, `NEXT_PUBLIC_TOSS_CLIENT_KEY` | 토스페이먼츠 결제 |
+| `GOOGLE_* / KAKAO_* / NAVER_*` | 소셜 로그인 (웹 `.env.local`) |
+| `INTERNAL_SYNC_SECRET` | 웹 서버 ↔ 백엔드 내부 통신 비밀값 (양쪽 동일) |
+| `MAIL_*`, `VAPID_*`, `FCM_CREDENTIALS_PATH` | 메일, 웹 푸시, 앱 푸시 |
 
-## 보안/개인정보 원칙
+> 개발 DB는 파일 기반 H2라 별도 설치가 필요 없습니다. 키가 없는 외부 연동은 조회만 건너뛰고 분석은 그대로 동작합니다.
 
-- 업로드된 등기부등본 원본(파일/이미지)은 분석 후 즉시 삭제, 디스크 비저장 원칙
-- API 키 등 민감 정보는 `.env`로 분리, 저장소에 커밋하지 않음
-- 상세 체크리스트는 [docs/기획서.md](docs/기획서.md) 7번 항목 참고
+### 3. 서버 실행
+
+```bash
+# 백엔드 (http://localhost:8080)
+cd backend && ./gradlew bootRun
+
+# 웹 (http://localhost:3000)
+cd frontend-web && npm install && npm run dev
+
+# 앱 (에뮬레이터를 켜 둔 상태에서)
+cd frontend-app && flutter pub get && flutter run
+```
+
+### 4. 테스트
+
+```bash
+cd backend && ./gradlew test             # 백엔드 단위·통합 테스트
+cd frontend-web && npm run test:e2e      # Playwright e2e 테스트
+```
+
+> 앱 실행 방법과 백엔드 주소 설정은 [frontend-app/README.md](frontend-app/README.md)를 참고하세요.
+
+<br>
+
+## 📚 문서
+
+| 문서 | 내용 |
+| --- | --- |
+| [기획서](docs/기획서.md) | 기획 배경, 기능 우선순위, 화면 구성, 보안·개인정보 체크리스트 |
+| [개발 결정사항](docs/결정사항.md) | 기획 대비 실제 개발 결정 51건과 그 이유, 트러블슈팅 기록 |
+
+<br>
+
+## 👤 개발자
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/chean0830">
+        <img src="https://github.com/chean0830.png" width="100" /><br>
+        <b>chean0830</b>
+      </a>
+      <br>
+      기획 · 백엔드 · 웹 · 앱
+    </td>
+  </tr>
+</table>
+
+> 이 서비스는 법률 조언이 아니며 참고용 정보를 제공합니다.
