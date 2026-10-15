@@ -96,6 +96,10 @@ function FieldLabel({ htmlFor, required, children }: { htmlFor: string; required
   )
 }
 
+// 백엔드(AnalyzeController.MAX_FILES_PER_REGISTRY)와 같은 값. 촬영 사진은 장마다 OCR을 거친다.
+const MAX_FILES_PER_REGISTRY = 5
+const FILE_LIMIT_NOTICE = `한 번에 ${MAX_FILES_PER_REGISTRY}장까지 올릴 수 있어요. 쪽수가 더 많으면 인터넷등기소에서 받은 PDF 파일 1개로 올려주세요.`
+
 export function AnalyzeForm() {
   const [state, formAction, pending] = useActionState(analyzeAction, initialState)
   const [files, setFiles] = useState<File[]>([])
@@ -103,6 +107,8 @@ export function AnalyzeForm() {
   const [propertyType, setPropertyType] = useState<PropertyType>('APARTMENT')
   const [priorDepositSource, setPriorDepositSource] = useState('')
   const [landFiles, setLandFiles] = useState<File[]>([])
+  const [fileLimitExceeded, setFileLimitExceeded] = useState(false)
+  const [landFileLimitExceeded, setLandFileLimitExceeded] = useState(false)
   const landFileInputRef = useRef<HTMLInputElement>(null)
   const isMultiHousehold = propertyType === 'MULTI_HOUSEHOLD'
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -112,13 +118,16 @@ export function AnalyzeForm() {
 
   function addFiles(newFiles: FileList | null) {
     if (!newFiles || newFiles.length === 0) return
-    setFiles((prev) => [...prev, ...Array.from(newFiles)])
+    const combined = [...files, ...Array.from(newFiles)]
+    setFileLimitExceeded(combined.length > MAX_FILES_PER_REGISTRY)
+    setFiles(combined.slice(0, MAX_FILES_PER_REGISTRY))
     if (fileInputRef.current) fileInputRef.current.value = ''
     if (cameraInputRef.current) cameraInputRef.current.value = ''
   }
 
   function removeFile(index: number) {
     setFiles((prev) => prev.filter((_, i) => i !== index))
+    setFileLimitExceeded(false)
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -187,6 +196,12 @@ export function AnalyzeForm() {
               카메라로 촬영
             </button>
           </div>
+
+          {fileLimitExceeded && (
+            <p role="alert" className="mt-3 text-sm text-red-600">
+              {FILE_LIMIT_NOTICE}
+            </p>
+          )}
 
           {files.length > 0 && (
             <ul className="mt-3 flex flex-col gap-1.5">
@@ -375,7 +390,11 @@ export function AnalyzeForm() {
                 accept="application/pdf,image/*"
                 onChange={(e) => {
                   const chosen = e.target.files
-                  if (chosen && chosen.length > 0) setLandFiles((prev) => [...prev, ...Array.from(chosen)])
+                  if (chosen && chosen.length > 0) {
+                    const combined = [...landFiles, ...Array.from(chosen)]
+                    setLandFileLimitExceeded(combined.length > MAX_FILES_PER_REGISTRY)
+                    setLandFiles(combined.slice(0, MAX_FILES_PER_REGISTRY))
+                  }
                   if (landFileInputRef.current) landFileInputRef.current.value = ''
                 }}
                 className="hidden"
@@ -387,6 +406,11 @@ export function AnalyzeForm() {
               >
                 토지 등기부 선택
               </button>
+              {landFileLimitExceeded && (
+                <p role="alert" className="mt-3 text-sm text-red-600">
+                  {FILE_LIMIT_NOTICE}
+                </p>
+              )}
               {landFiles.length > 0 && (
                 <ul className="mt-3 flex flex-col gap-1.5">
                   {landFiles.map((file, index) => (

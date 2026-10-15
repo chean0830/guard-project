@@ -29,6 +29,9 @@ class AccountSecurityTest {
     private AuthService authService;
 
     @Autowired
+    private AuthTokenRepository authTokenRepository;
+
+    @Autowired
     private LawyerAuthService lawyerAuthService;
 
     @Autowired
@@ -177,5 +180,25 @@ class AccountSecurityTest {
         String raw = "test-token-" + UUID.randomUUID();
         tokenRepository.save(new PasswordResetToken(PasswordResetService.hash(raw), type, accountId, Instant.now().plusSeconds(600)));
         return raw;
+    }
+
+    @Test
+    void 이메일은_대소문자를_구분하지_않는다() {
+        String id = java.util.UUID.randomUUID().toString();
+        authService.signup("Case-" + id + "@Example.com", "password123");
+
+        assertEquals("case-" + id + "@example.com", authService.login("CASE-" + id + "@EXAMPLE.COM", "password123").email());
+        assertThrows(EmailAlreadyExistsException.class, () -> authService.signup("case-" + id + "@example.com", "password123"));
+    }
+
+    @Test
+    void 세션_토큰은_DB에_해시로만_저장된다() {
+        String token = authService.signup("hash-" + java.util.UUID.randomUUID() + "@example.com", "password123").token();
+
+        assertFalse(authTokenRepository.existsById(token));
+        assertTrue(authTokenRepository.existsById(com.projectguard.backend.common.TokenHash.of(token)));
+        assertTrue(authService.validate(token).isPresent());
+        authService.logout(token);
+        assertTrue(authService.validate(token).isEmpty());
     }
 }

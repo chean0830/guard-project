@@ -141,4 +141,12 @@ class ConsultationServiceTest {
         List<Consultation> list = consultationService.listForUser(userId);
         assertTrue(list.stream().anyMatch(c -> c.getId().equals(consultation.getId())));
     }
+
+    @Test
+    void 메시지가_2000자를_넘으면_저장_오류_대신_안내한다() {
+        approvedLawyerId("match-long@example.com");
+        Long userId = userId("user-long@example.com");
+        assertThrows(IllegalArgumentException.class,
+                () -> consultationService.startConsultation(userId, "가".repeat(2001)));
+    }
 }

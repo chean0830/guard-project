@@ -82,6 +82,21 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
     super.dispose();
   }
 
+  /// 백엔드(AnalyzeController.MAX_FILES_PER_REGISTRY)와 같은 값. 촬영 사진은 장마다 OCR을 거친다.
+  static const _maxFilesPerRegistry = 5;
+
+  /// [added]를 [into]에 담되 5장을 넘는 부분은 버리고 안내한다.
+  void _addWithinLimit(List<UploadFile> into, List<UploadFile> added) {
+    final room = _maxFilesPerRegistry - into.length;
+    final exceeded = added.length > room;
+    setState(() {
+      into.addAll(added.take(room < 0 ? 0 : room));
+      _error = exceeded
+          ? '한 번에 $_maxFilesPerRegistry장까지 올릴 수 있어요. 쪽수가 더 많으면 인터넷등기소에서 받은 PDF 파일 1개로 올려주세요.'
+          : _error;
+    });
+  }
+
   Future<void> _takePhoto() async {
     final photo = await _picker.pickImage(source: ImageSource.camera, imageQuality: 90);
     if (photo == null) return;
@@ -119,7 +134,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
       final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: ['pdf']);
       if (file == null) return;
       final bytes = await file.readAsBytes();
-      setState(() => into.add(UploadFile(name: file.name, bytes: bytes, contentType: 'application/pdf')));
+      _addWithinLimit(into, [UploadFile(name: file.name, bytes: bytes, contentType: 'application/pdf')]);
     }
   }
 
@@ -132,7 +147,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
         contentType: img.mimeType ?? (img.name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg'),
       ));
     }
-    setState(() => into.addAll(added));
+    _addWithinLimit(into, added);
   }
 
   int? _parseInt(String text) => int.tryParse(text.replaceAll(',', '').trim());

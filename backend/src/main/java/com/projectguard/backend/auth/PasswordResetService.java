@@ -74,8 +74,8 @@ public class PasswordResetService {
             throw new IllegalStateException("비밀번호 찾기 메일은 하루 " + MAX_MAILS_PER_DAY + "번까지 보낼 수 있어요. 내일 다시 시도해주세요.");
         }
         Optional<Long> accountId = "LAWYER".equals(type)
-                ? lawyerRepository.findByEmail(email.trim()).map(l -> l.getId())
-                : userRepository.findByEmail(email.trim()).map(User::getId);
+                ? lawyerRepository.findByEmail(AuthService.normalizeEmail(email)).map(l -> l.getId())
+                : userRepository.findByEmail(AuthService.normalizeEmail(email)).map(User::getId);
         if (accountId.isEmpty()) {
             return;
         }

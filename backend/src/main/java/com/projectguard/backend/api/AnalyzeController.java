@@ -53,6 +53,12 @@ public class AnalyzeController {
             + " 다가구주택은 먼저 들어온 세입자 보증금이 등기부에 나오지 않아, 이 결과는 직접 입력하신 선순위 보증금과"
             + " 건물 시세가 정확하다는 전제에서만 의미가 있습니다. 서비스는 입력값을 확인하지 않으며, 안전하다고 판정하지 않습니다.";
 
+    /**
+     * 등기부 한 건당 올릴 수 있는 파일 수. 촬영 사진은 장마다 유료 OCR을 한 번씩 부른다.
+     * 실제 등기부 샘플 4건이 3~5쪽이었고, 더 긴 등기부는 PDF 1개로 올리면 된다.
+     */
+    static final int MAX_FILES_PER_REGISTRY = 5;
+
     private final RegistryAnalysisService registryAnalysisService;
     private final MarketPriceService marketPriceService;
     private final BuildingRegisterService buildingRegisterService;
@@ -100,8 +106,26 @@ public class AnalyzeController {
         if (files == null || files.isEmpty()) {
             throw new NotRegistryDocumentException("등기부등본 파일을 1장 이상 업로드해주세요.");
         }
+        requireWithinFileLimit(files, "등기부등본");
+        requireWithinFileLimit(landFiles, "토지 등기부등본");
         AnalysisAccessService.Access access = analysisAccessService.authorize(bearer(authorization));
+        try {
+            return analyze(files, propertyType, contractType, depositAmount, monthlyRent, buildingName, exclusiveAreaSqm,
+                    declaredLandlordName, declaredAddress, priorDepositTotal, priorDepositSource, buildingPrice,
+                    violationBuilding, landFiles, roomCount);
+        } catch (IOException | RuntimeException e) {
+            // 분석이 실패하면 미리 차감한 무료 횟수 또는 결제 이용권을 돌려준다.
+            analysisAccessService.release(access);
+            throw e;
+        }
+    }
 
+    private AnalyzeResponse analyze(
+            List<MultipartFile> files, PropertyType propertyType, ContractType contractType, long depositAmount,
+            Long monthlyRent, String buildingName, Double exclusiveAreaSqm, String declaredLandlordName,
+            String declaredAddress, Long priorDepositTotal, PriorDepositSource priorDepositSource, Long buildingPrice,
+            ViolationBuildingAnswer violationBuilding, List<MultipartFile> landFiles, Integer roomCount
+    ) throws IOException {
         boolean multiHousehold = propertyType == PropertyType.MULTI_HOUSEHOLD;
         List<UploadedPage> pages = toPages(files);
 
@@ -138,11 +162,22 @@ public class AnalyzeController {
         List<ChecklistItem> checklist = checklistService.generate(
                 registry, contractType, propertyType, violationBuilding, landRegistry != null);
 
-        analysisAccessService.complete(access);
         return new AnalyzeResponse(
                 propertyType, registry, landRegistry, marketPrice, officialHousePrice, buildingInfo, result.signals(),
                 result.hasHighRisk(), checklist,
                 multiHousehold ? MULTI_HOUSEHOLD_DISCLAIMER : DISCLAIMER);
+    }
+
+    /** 빈 파일은 세지 않는다 (toPages도 건너뛴다). */
+    private static void requireWithinFileLimit(List<MultipartFile> files, String label) {
+        if (files == null) {
+            return;
+        }
+        long count = files.stream().filter(f -> !f.isEmpty()).count();
+        if (count > MAX_FILES_PER_REGISTRY) {
+            throw new NotRegistryDocumentException(label + "은 한 번에 " + MAX_FILES_PER_REGISTRY + "장까지 올릴 수 있어요. "
+                    + "쪽수가 더 많으면 인터넷등기소에서 받은 PDF 파일 1개로 올려주세요 (PDF는 한 파일에 모든 쪽이 들어 있어요).");
+        }
     }
 
     private List<UploadedPage> toPages(List<MultipartFile> files) throws IOException {
@@ -190,6 +225,12 @@ public class AnalyzeController {
     @ExceptionHandler(AnalysisPaymentRequiredException.class)
     @ResponseStatus(HttpStatus.PAYMENT_REQUIRED)
     public String handlePaymentRequired(AnalysisPaymentRequiredException e) {
+        return e.getMessage();
+    }
+
+    @ExceptionHandler(AnalysisAttemptLimitException.class)
+    @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+    public String handleAttemptLimit(AnalysisAttemptLimitException e) {
         return e.getMessage();
     }
 

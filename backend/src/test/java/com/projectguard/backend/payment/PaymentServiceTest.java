@@ -118,6 +118,21 @@ class PaymentServiceTest {
     }
 
     @Test
+    void 승인_결과를_알_수_없으면_주문을_실패로_굳히지_않고_다시_시도하면_이용권이_생긴다() {
+        PaymentOrder order = paymentService.createOrder(userId);
+        doThrow(new PaymentUncertainException()).doNothing()
+                .when(tossPaymentsClient).confirm(anyString(), anyString(), anyLong());
+
+        assertThrows(PaymentUncertainException.class, () ->
+                paymentService.confirm(userId, "pk-timeout", order.getOrderId(), 2900));
+        assertEquals(PaymentStatus.READY, orderRepository.findByOrderId(order.getOrderId()).orElseThrow().getStatus());
+        assertEquals(0, paymentService.availableCredits(userId));
+
+        paymentService.confirm(userId, "pk-timeout", order.getOrderId(), 2900);
+        assertEquals(1, paymentService.availableCredits(userId));
+    }
+
+    @Test
     void 토스_승인이_거절되면_이용권이_생기지_않는다() {
         PaymentOrder order = paymentService.createOrder(userId);
         doThrow(new PaymentException("카드 한도 초과")).when(tossPaymentsClient).confirm(anyString(), anyString(), anyLong());

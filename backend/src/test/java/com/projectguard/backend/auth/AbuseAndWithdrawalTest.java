@@ -73,7 +73,7 @@ class AbuseAndWithdrawalTest {
     }
 
     @Test
-    void 무료를_다_쓰면_결제한_분석_이용권을_쓰고_성공한_뒤에만_차감한다() {
+    void 무료를_다_쓰면_결제한_분석_이용권을_미리_잡고_실패하면_돌려준다() {
         String token = newUserToken();
         Long userId = authService.validate(token).orElseThrow().getId();
         for (int i = 0; i < 5; i++) {
@@ -83,11 +83,45 @@ class AbuseAndWithdrawalTest {
         assertEquals(990, order.getAmount());
         paymentService.confirm(userId, "pk-" + UUID.randomUUID(), order.getOrderId(), 990);
 
-        AnalysisAccessService.Access access = analysisAccessService.authorize(token);
-        assertTrue(access.paid());
-        analysisAccessService.complete(access);
+        // 분석을 시작하는 순간 이용권을 잡아서, 끝나기 전에 온 두 번째 요청은 통과하지 못한다.
+        AnalysisAccessService.Access failed = analysisAccessService.authorize(token);
+        assertTrue(failed.paid());
         assertEquals(0, paymentService.availableCredits(userId, ProductType.ANALYSIS));
         assertThrows(AnalysisPaymentRequiredException.class, () -> analysisAccessService.authorize(token));
+
+        // 분석이 실패하면 돌려받아 다시 쓸 수 있다.
+        analysisAccessService.release(failed);
+        assertEquals(1, paymentService.availableCredits(userId, ProductType.ANALYSIS));
+
+        assertTrue(analysisAccessService.authorize(token).paid());
+        assertEquals(0, paymentService.availableCredits(userId, ProductType.ANALYSIS));
+        assertThrows(AnalysisPaymentRequiredException.class, () -> analysisAccessService.authorize(token));
+    }
+
+    @Test
+    void 무료_분석이_실패하면_횟수를_돌려받는다() {
+        String token = newUserToken();
+        for (int i = 0; i < 4; i++) {
+            analysisAccessService.authorize(token);
+        }
+        AnalysisAccessService.Access last = analysisAccessService.authorize(token);
+        assertFalse(last.paid());
+        assertThrows(AnalysisPaymentRequiredException.class, () -> analysisAccessService.authorize(token));
+
+        analysisAccessService.release(last);
+
+        assertFalse(analysisAccessService.authorize(token).paid());
+        assertThrows(AnalysisPaymentRequiredException.class, () -> analysisAccessService.authorize(token));
+    }
+
+    @Test
+    void 하루_분석_시도_횟수를_넘으면_막는다() {
+        String token = newUserToken();
+        for (int i = 0; i < AnalysisAccessService.ATTEMPTS_PER_DAY; i++) {
+            analysisAccessService.release(analysisAccessService.authorize(token));
+        }
+        assertThrows(com.projectguard.backend.api.AnalysisAttemptLimitException.class,
+                () -> analysisAccessService.authorize(token));
     }
 
     @Test

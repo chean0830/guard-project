@@ -100,6 +100,10 @@ public class PaymentOrder {
         this.usedAt = Instant.now();
     }
 
+    public void markUnused() {
+        this.usedAt = null;
+    }
+
     public void markPaid(String paymentKey) {
         this.status = PaymentStatus.PAID;
         this.paymentKey = paymentKey;

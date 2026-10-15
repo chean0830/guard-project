@@ -15,8 +15,14 @@ import java.io.IOException;
 @Component
 public class RegistryPdfTextExtractor {
 
+    /** 등기부는 보통 3~5쪽이고 길어도 수십 쪽을 넘지 않는다. 엉뚱한 대용량 PDF로 서버를 붙잡는 것을 막는다. */
+    static final int MAX_PAGES = 30;
+
     public String extractText(byte[] pdfBytes) throws IOException {
         try (PDDocument document = Loader.loadPDF(pdfBytes)) {
+            if (document.getNumberOfPages() > MAX_PAGES) {
+                throw new NotRegistryDocumentException("PDF 쪽수가 너무 많아요 (" + MAX_PAGES + "쪽까지). 등기부등본 PDF만 올려주세요.");
+            }
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
             return stripper.getText(document);

@@ -106,10 +106,20 @@ public class ConsultationService {
                 SenderType.USER, consultation.getUserId(), consultation.getId(), reason));
     }
 
+    /** DB 컬럼 길이(ConsultationMessage.content)와 같다. 넘으면 저장 오류(500) 대신 안내한다. */
+    static final int MAX_MESSAGE_LENGTH = 2000;
+
+    private void requireWithinLength(String content) {
+        if (content.length() > MAX_MESSAGE_LENGTH) {
+            throw new IllegalArgumentException("메시지는 " + MAX_MESSAGE_LENGTH + "자까지 보낼 수 있어요. 나눠서 보내주세요.");
+        }
+    }
+
     private void requireMessage(String initialMessage) {
         if (initialMessage == null || initialMessage.isBlank()) {
             throw new IllegalArgumentException("문의 내용을 입력해주세요.");
         }
+        requireWithinLength(initialMessage);
     }
 
     private Consultation openConsultation(Long userId, Lawyer lawyer, String initialMessage) {
@@ -125,6 +135,7 @@ public class ConsultationService {
         if (content == null || content.isBlank()) {
             throw new IllegalArgumentException("메시지 내용을 입력해주세요.");
         }
+        requireWithinLength(content);
         Consultation consultation = requireConsultation(consultationId);
         requireParticipant(consultation, senderType, senderId);
         if (isCounterpartBlocked(consultation, senderType)) {

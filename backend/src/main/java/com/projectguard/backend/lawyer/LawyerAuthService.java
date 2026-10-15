@@ -1,6 +1,8 @@
 package com.projectguard.backend.lawyer;
 
+import com.projectguard.backend.common.TokenHash;
 import com.projectguard.backend.auth.AccountBlockedException;
+import com.projectguard.backend.auth.AuthService;
 import com.projectguard.backend.auth.EmailAlreadyExistsException;
 import com.projectguard.backend.auth.InvalidCredentialsException;
 import com.projectguard.backend.auth.LoginLockedException;
@@ -48,13 +50,14 @@ public class LawyerAuthService {
     }
 
     public Lawyer signup(
-            String email,
+            String rawEmail,
             String password,
             String name,
             String lawFirm,
             String barNumber,
             List<MultipartFile> documents
     ) {
+        String email = AuthService.normalizeEmail(rawEmail);
         validateSignupFields(email, password, name, barNumber);
         List<MultipartFile> attachments = documents == null
                 ? List.of()
@@ -83,7 +86,8 @@ public class LawyerAuthService {
         return lawyer;
     }
 
-    public LawyerAuthResult login(String email, String password) {
+    public LawyerAuthResult login(String rawEmail, String password) {
+        String email = AuthService.normalizeEmail(rawEmail);
         String wrong = "이메일 또는 비밀번호가 올바르지 않습니다. (" + LoginLockedException.MAX_FAILED_ATTEMPTS + "회 틀리면 로그인이 잠겨요)";
         Lawyer lawyer = lawyerRepository.findByEmail(email)
                 .orElseThrow(() -> new InvalidCredentialsException(wrong));
@@ -122,7 +126,7 @@ public class LawyerAuthService {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
-        return tokenRepository.findById(token)
+        return tokenRepository.findById(TokenHash.of(token))
                 .filter(t -> t.getExpiresAt().isAfter(Instant.now()))
                 .flatMap(t -> lawyerRepository.findById(t.getLawyerId()))
                 .filter(l -> !l.isBlocked());
@@ -130,7 +134,7 @@ public class LawyerAuthService {
 
     public void logout(String token) {
         if (token != null && !token.isBlank()) {
-            tokenRepository.deleteById(token);
+            tokenRepository.deleteById(TokenHash.of(token));
         }
     }
 
@@ -203,7 +207,7 @@ public class LawyerAuthService {
 
     private LawyerAuthResult issueToken(Lawyer lawyer) {
         String token = UUID.randomUUID().toString();
-        tokenRepository.save(new LawyerAuthToken(token, lawyer.getId(), Instant.now().plus(TOKEN_TTL)));
+        tokenRepository.save(new LawyerAuthToken(TokenHash.of(token), lawyer.getId(), Instant.now().plus(TOKEN_TTL)));
         return new LawyerAuthResult(token, lawyer.getEmail(), lawyer.getName());
     }
 

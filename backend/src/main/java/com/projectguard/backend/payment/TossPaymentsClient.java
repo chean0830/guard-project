@@ -51,9 +51,36 @@ public class TossPaymentsClient {
                     .retrieve()
                     .toBodilessEntity();
         } catch (RestClientResponseException e) {
+            String code = tossErrorCode(e.getResponseBodyAsString());
+            if ("ALREADY_PROCESSED_PAYMENT".equals(code) && isPaid(paymentKey, orderId, amount, basic)) {
+                // 앞선 승인 요청이 응답만 못 받고 실제로는 처리된 경우 — 결제 조회로 확인됐으니 성공으로 본다.
+                return;
+            }
+            // 5xx와 "같은 요청을 처리 중"은 승인이 됐는지 알 수 없다. 거절이 확실한 4xx만 실패로 본다.
+            if (e.getStatusCode().is5xxServerError() || "IDEMPOTENT_REQUEST_PROCESSING".equals(code)
+                    || "ALREADY_PROCESSED_PAYMENT".equals(code)) {
+                throw new PaymentUncertainException();
+            }
             throw new PaymentException(tossErrorMessage(e.getResponseBodyAsString()));
         } catch (RuntimeException e) {
-            throw new PaymentException("결제 승인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            // 시간 초과·연결 끊김: 요청이 토스에 닿았는지조차 알 수 없다.
+            throw new PaymentUncertainException();
+        }
+    }
+
+    /** 결제 조회로 이 주문이 우리 금액 그대로 결제 완료(DONE)됐는지 확인한다. 확인하지 못하면 false. */
+    private boolean isPaid(String paymentKey, String orderId, long amount, String basic) {
+        try {
+            JsonNode payment = objectMapper.readTree(restClient.get()
+                    .uri("https://api.tosspayments.com/v1/payments/{paymentKey}", paymentKey)
+                    .header("Authorization", "Basic " + basic)
+                    .retrieve()
+                    .body(String.class));
+            return "DONE".equals(payment.path("status").asString(""))
+                    && orderId.equals(payment.path("orderId").asString(""))
+                    && payment.path("totalAmount").asLong(-1) == amount;
+        } catch (RuntimeException e) {
+            return false;
         }
     }
 
@@ -76,6 +103,14 @@ public class TossPaymentsClient {
             throw new PaymentException(tossErrorMessage(e.getResponseBodyAsString()));
         } catch (RuntimeException e) {
             throw new PaymentException("결제 취소 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        }
+    }
+
+    private String tossErrorCode(String body) {
+        try {
+            return objectMapper.readTree(body).path("code").asString("");
+        } catch (RuntimeException e) {
+            return "";
         }
     }
 

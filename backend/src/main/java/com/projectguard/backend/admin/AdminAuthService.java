@@ -1,5 +1,6 @@
 package com.projectguard.backend.admin;
 
+import com.projectguard.backend.common.TokenHash;
 import com.projectguard.backend.auth.InvalidCredentialsException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -57,7 +58,7 @@ public class AdminAuthService {
         }
         failedAttempts = 0;
         String token = UUID.randomUUID().toString();
-        tokenRepository.save(new AdminAuthToken(token, Instant.now().plus(TOKEN_TTL)));
+        tokenRepository.save(new AdminAuthToken(TokenHash.of(token), Instant.now().plus(TOKEN_TTL)));
         return token;
     }
 
@@ -65,14 +66,14 @@ public class AdminAuthService {
         if (token == null || token.isBlank()) {
             return false;
         }
-        return tokenRepository.findById(token)
+        return tokenRepository.findById(TokenHash.of(token))
                 .filter(t -> t.getExpiresAt().isAfter(Instant.now()))
                 .isPresent();
     }
 
     public void logout(String token) {
         if (token != null && !token.isBlank()) {
-            tokenRepository.deleteById(token);
+            tokenRepository.deleteById(TokenHash.of(token));
         }
     }
 

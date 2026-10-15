@@ -44,12 +44,11 @@ public class PaymentService {
     /**
      * 토스 결제창에서 돌아온 결제를 승인한다. 이미 같은 결제로 승인된 주문이면 그대로 성공 처리한다
      * (성공 페이지 새로고침 등으로 승인 요청이 두 번 와도 이용권이 두 장 생기거나 오류가 나지 않게).
+     * 같은 주문의 승인 요청이 동시에 와도 하나씩 처리되도록 주문을 잠그고 가져온다.
      */
     @Transactional(noRollbackFor = PaymentException.class)
     public PaymentOrder confirm(Long userId, String paymentKey, String orderId, long amount) {
-        PaymentOrder order = orderRepository.findByOrderId(orderId)
-                .filter(o -> o.getUserId().equals(userId))
-                .orElseThrow(() -> new PaymentException("주문 정보를 찾을 수 없습니다."));
+        PaymentOrder order = lockOwnOrder(userId, orderId);
 
         if (order.getStatus() == PaymentStatus.PAID) {
             if (order.getPaymentKey().equals(paymentKey)) {
@@ -68,6 +67,9 @@ public class PaymentService {
 
         try {
             tossPaymentsClient.confirm(paymentKey, orderId, order.getAmount());
+        } catch (PaymentUncertainException e) {
+            // 돈이 빠져나갔을 수 있다 — 실패로 굳히면 재시도가 막혀 이용권 없이 결제만 남으므로 주문을 그대로 둔다.
+            throw e;
         } catch (PaymentException e) {
             order.markFailed();
             orderRepository.save(order);
@@ -86,19 +88,33 @@ public class PaymentService {
                 userId, productType, PaymentStatus.PAID);
     }
 
-    /** 분석 이용권 1장을 사용 처리한다. 분석이 성공한 뒤에만 호출해서, 실패한 분석에는 이용권이 줄지 않게 한다. */
+    /**
+     * 분석 이용권 1장을 분석 시작 전에 미리 잡아둔다(사용 처리). 잡은 주문번호를 돌려주고, 이용권이 없으면 null.
+     * 분석이 끝난 뒤에 차감하면, 그 사이 동시에 보낸 요청이 모두 같은 이용권 1장으로 통과했다.
+     */
     @Transactional
-    public boolean consumeAnalysisCredit(Long userId) {
+    public String reserveAnalysisCredit(Long userId) {
         List<PaymentOrder> credits = orderRepository
                 .findByUserIdAndProductTypeAndStatusAndUsedAtIsNullAndConsultationIdIsNullOrderByPaidAtAsc(
                         userId, ProductType.ANALYSIS, PaymentStatus.PAID);
         if (credits.isEmpty()) {
-            return false;
+            return null;
         }
         PaymentOrder credit = credits.get(0);
         credit.markUsed();
         orderRepository.save(credit);
-        return true;
+        return credit.getOrderId();
+    }
+
+    /** 분석이 실패했을 때 미리 잡아둔 이용권을 돌려준다 (실패한 분석에는 이용권이 줄지 않게). */
+    @Transactional
+    public void releaseAnalysisCredit(String orderId) {
+        orderRepository.findByOrderIdForUpdate(orderId)
+                .filter(o -> o.getProductType() == ProductType.ANALYSIS && o.getStatus() == PaymentStatus.PAID)
+                .ifPresent(o -> {
+                    o.markUnused();
+                    orderRepository.save(o);
+                });
     }
 
     /** 회원 본인의 결제 내역 (결제창만 열고 끝난 주문은 제외). */

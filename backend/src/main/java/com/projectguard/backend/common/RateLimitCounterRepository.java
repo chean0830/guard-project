@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface RateLimitCounterRepository extends JpaRepository<RateLimitCounter, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<RateLimitCounter> findByCounterKeyAndDay(String counterKey, LocalDate day);
+
+    boolean existsByCounterKeyAndDay(String counterKey, LocalDate day);
 }

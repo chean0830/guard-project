@@ -106,6 +106,40 @@ class AnalyzeControllerTest {
     }
 
     @Test
+    void 파일이_5장을_넘으면_분석을_시작하지_않고_400을_반환한다() throws Exception {
+        var request = multipart("/api/analyze");
+        for (int i = 0; i < 6; i++) {
+            request.file(new MockMultipartFile("files", "page" + i + ".jpg", "image/jpeg", new byte[]{1}));
+        }
+
+        mockMvc.perform(request
+                        .param("propertyType", "APARTMENT")
+                        .param("contractType", "JEONSE")
+                        .param("depositAmount", "200000000"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("5장까지")));
+
+        org.mockito.Mockito.verify(analysisAccessService, org.mockito.Mockito.never()).authorize(any());
+        org.mockito.Mockito.verify(registryAnalysisService, org.mockito.Mockito.never()).analyze(anyList());
+    }
+
+    @Test
+    void 분석이_실패하면_미리_잡아둔_이용권을_돌려준다() throws Exception {
+        AnalysisAccessService.Access access = new AnalysisAccessService.Access(true, 1L, "PG-test", "user@example.com");
+        when(analysisAccessService.authorize(any())).thenReturn(access);
+        when(registryAnalysisService.analyze(anyList())).thenThrow(new NotRegistryDocumentException("등기부등본이 아닙니다."));
+
+        mockMvc.perform(multipart("/api/analyze")
+                        .file(samplePdf())
+                        .param("propertyType", "APARTMENT")
+                        .param("contractType", "JEONSE")
+                        .param("depositAmount", "200000000"))
+                .andExpect(status().isBadRequest());
+
+        org.mockito.Mockito.verify(analysisAccessService).release(access);
+    }
+
+    @Test
     void 등기부등본이_아니면_400과_안내메시지를_반환한다() throws Exception {
         when(registryAnalysisService.analyze(anyList()))
                 .thenThrow(new NotRegistryDocumentException("등기부등본(등기사항전부증명서)이 아닌 것 같습니다. 등기부등본 PDF를 업로드해주세요."));

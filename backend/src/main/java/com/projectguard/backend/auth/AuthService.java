@@ -1,5 +1,7 @@
 package com.projectguard.backend.auth;
 
+import java.util.Locale;
+import com.projectguard.backend.common.TokenHash;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -28,7 +30,8 @@ public class AuthService {
         this.authTokenRepository = authTokenRepository;
     }
 
-    public AuthResult signup(String email, String password) {
+    public AuthResult signup(String rawEmail, String password) {
+        String email = normalizeEmail(rawEmail);
         validateCredentialFormat(email, password);
         if (userRepository.findByEmail(email).isPresent()) {
             throw new EmailAlreadyExistsException("이미 가입된 이메일입니다.");
@@ -38,7 +41,8 @@ public class AuthService {
         return issueToken(user);
     }
 
-    public AuthResult login(String email, String password) {
+    public AuthResult login(String rawEmail, String password) {
+        String email = normalizeEmail(rawEmail);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new InvalidCredentialsException(WRONG_CREDENTIALS));
         if (user.isLoginLocked()) {
@@ -68,7 +72,8 @@ public class AuthService {
      * 인증되지 않은 이메일을 믿고 합치면, 남의 이메일을 적어둔 소셜 계정으로 그 사람 계정에 들어갈 수
      * 있기 때문(계정 탈취). 이미 이 소셜 계정으로 만들어진 회원이면 이메일 인증 여부와 상관없이 로그인된다.
      */
-    public AuthResult oauthLogin(String provider, String providerId, String email, boolean emailVerified) {
+    public AuthResult oauthLogin(String provider, String providerId, String rawEmail, boolean emailVerified) {
+        String email = normalizeEmail(rawEmail);
         Optional<User> linked = userRepository.findByProviderAndProviderId(provider, providerId);
         if (linked.isPresent()) {
             requireNotBlocked(linked.get());
@@ -103,7 +108,7 @@ public class AuthService {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
-        return authTokenRepository.findById(token)
+        return authTokenRepository.findById(TokenHash.of(token))
                 .filter(t -> t.getExpiresAt().isAfter(Instant.now()))
                 .flatMap(t -> userRepository.findById(t.getUserId()))
                 // 정지 처리 전에 발급된 세션도 즉시 끊기도록, 토큰이 살아있어도 정지 계정은 인증 실패로 본다.
@@ -112,7 +117,7 @@ public class AuthService {
 
     public void logout(String token) {
         if (token != null && !token.isBlank()) {
-            authTokenRepository.deleteById(token);
+            authTokenRepository.deleteById(TokenHash.of(token));
         }
     }
 
@@ -140,6 +145,11 @@ public class AuthService {
         userRepository.save(user);
     }
 
+    /** 이메일은 대소문자를 구분하지 않는다 — User@x.com과 user@x.com이 서로 다른 계정이 되지 않게 소문자로 맞춘다. */
+    public static String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(Locale.ROOT);
+    }
+
     private void requireNotBlocked(User user) {
         if (user.isBlocked()) {
             throw new AccountBlockedException(user.getBlockedReason());
@@ -148,7 +158,7 @@ public class AuthService {
 
     private AuthResult issueToken(User user) {
         String token = UUID.randomUUID().toString();
-        authTokenRepository.save(new AuthToken(token, user.getId(), Instant.now().plus(TOKEN_TTL)));
+        authTokenRepository.save(new AuthToken(TokenHash.of(token), user.getId(), Instant.now().plus(TOKEN_TTL)));
         return new AuthResult(token, user.getEmail());
     }
 

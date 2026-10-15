@@ -41,6 +41,12 @@ public class RateLimitCounter {
         this.count++;
     }
 
+    public void decrement() {
+        if (this.count > 0) {
+            this.count--;
+        }
+    }
+
     public Long getId() {
         return id;
     }
