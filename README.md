@@ -22,6 +22,8 @@
 <img src="docs/badges/flutter-02569b.svg" />
 <img src="docs/badges/firebase-fcm-dd2c00.svg" />
 <img src="docs/badges/toss-payments-0064ff.svg" />
+<br>
+<a href="https://github.com/chean0830/guard-project/actions/workflows/ci.yml"><img src="https://github.com/chean0830/guard-project/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
 
 </div>
 
@@ -91,6 +93,7 @@
 <img src="docs/portfolio/slide-26.jpg" width="800" />
 <img src="docs/portfolio/slide-27.jpg" width="800" />
 <img src="docs/portfolio/slide-28.jpg" width="800" />
+<img src="docs/portfolio/slide-29.jpg" width="800" />
 
 </details>
 
@@ -98,11 +101,11 @@
 <summary><b>05. 평가와 배포</b></summary>
 <br>
 
-<img src="docs/portfolio/slide-29.jpg" width="800" />
 <img src="docs/portfolio/slide-30.jpg" width="800" />
 <img src="docs/portfolio/slide-31.jpg" width="800" />
 <img src="docs/portfolio/slide-32.jpg" width="800" />
 <img src="docs/portfolio/slide-33.jpg" width="800" />
+<img src="docs/portfolio/slide-34.jpg" width="800" />
 
 </details>
 
@@ -118,7 +121,7 @@
 | 🏠 **다가구 조건부 분석** | 선순위 보증금 직접 입력, 토지 등기부 함께 분석, HUG 반환보증 가입 가능성 추정 — '안전' 판정은 내리지 않음 |
 | ✅ **체크리스트** | 계약 형태·권리관계에 따라 달라지는 직접 확인 항목 안내 |
 | ⚖️ **변호사 상담** | 관리자 승인을 거친 변호사와 1:1 실시간 채팅(WebSocket), 신고·이용 정지·개인 차단 |
-| 💳 **결제** | 토스페이먼츠 — 분석 이용권(990원), 변호사 직접 선택(2,900원), 결제 취소·환불 |
+| 💳 **결제** | 토스페이먼츠 — 분석 이용권(990원), 변호사 직접 선택(2,900원), 결제 취소·환불, 승인 결과 불확실 시 중복 없는 재승인 |
 | 🔔 **알림** | 이메일, 웹 푸시(VAPID), 앱 푸시(FCM) |
 | 👤 **회원** | 이메일 인증 가입, 구글·카카오·네이버 소셜 로그인, 비밀번호 찾기, 회원 탈퇴 |
 | 🛠 **관리자** | 변호사 승인, 신고·회원·결제 관리 (웹·앱 공통) |
@@ -193,7 +196,7 @@ cd frontend-web && npm run test:e2e      # Playwright e2e 테스트
 | 문서 | 내용 |
 | --- | --- |
 | [기획서](docs/기획서.md) | 기획 배경, 기능 우선순위, 화면 구성, 보안·개인정보 체크리스트 |
-| [개발 결정사항](docs/결정사항.md) | 기획 대비 실제 개발 결정 51건과 그 이유, 트러블슈팅 기록 |
+| [개발 결정사항](docs/결정사항.md) | 기획 대비 실제 개발 결정 54건과 그 이유, 트러블슈팅 기록 |
 
 <br>
 
