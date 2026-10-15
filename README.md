@@ -35,7 +35,7 @@
 
 <div align="center">
 
-[📥 포트폴리오 PDF 내려받기](docs/portfolio/ProjectGuard_Portfolio.pdf)
+[📥 포트폴리오 PDF 내려받기](docs/portfolio/ProjectGuard_Portfolio.pdf) · [PPTX](docs/portfolio/ProjectGuard_Portfolio.pptx)
 
 </div>
 
@@ -48,6 +48,7 @@
 <img src="docs/portfolio/slide-04.jpg" width="800" />
 <img src="docs/portfolio/slide-05.jpg" width="800" />
 <img src="docs/portfolio/slide-06.jpg" width="800" />
+<img src="docs/portfolio/slide-07.jpg" width="800" />
 
 </details>
 
@@ -55,10 +56,11 @@
 <summary><b>02. 설계와 기술</b></summary>
 <br>
 
-<img src="docs/portfolio/slide-07.jpg" width="800" />
 <img src="docs/portfolio/slide-08.jpg" width="800" />
 <img src="docs/portfolio/slide-09.jpg" width="800" />
 <img src="docs/portfolio/slide-10.jpg" width="800" />
+<img src="docs/portfolio/slide-11.jpg" width="800" />
+<img src="docs/portfolio/slide-12.jpg" width="800" />
 
 </details>
 
@@ -66,8 +68,6 @@
 <summary><b>03. 핵심 기능</b></summary>
 <br>
 
-<img src="docs/portfolio/slide-11.jpg" width="800" />
-<img src="docs/portfolio/slide-12.jpg" width="800" />
 <img src="docs/portfolio/slide-13.jpg" width="800" />
 <img src="docs/portfolio/slide-14.jpg" width="800" />
 <img src="docs/portfolio/slide-15.jpg" width="800" />
@@ -76,6 +76,9 @@
 <img src="docs/portfolio/slide-18.jpg" width="800" />
 <img src="docs/portfolio/slide-19.jpg" width="800" />
 <img src="docs/portfolio/slide-20.jpg" width="800" />
+<img src="docs/portfolio/slide-21.jpg" width="800" />
+<img src="docs/portfolio/slide-22.jpg" width="800" />
+<img src="docs/portfolio/slide-23.jpg" width="800" />
 
 </details>
 
@@ -83,21 +86,23 @@
 <summary><b>04. 트러블슈팅</b></summary>
 <br>
 
-<img src="docs/portfolio/slide-21.jpg" width="800" />
-<img src="docs/portfolio/slide-22.jpg" width="800" />
-<img src="docs/portfolio/slide-23.jpg" width="800" />
 <img src="docs/portfolio/slide-24.jpg" width="800" />
 <img src="docs/portfolio/slide-25.jpg" width="800" />
+<img src="docs/portfolio/slide-26.jpg" width="800" />
+<img src="docs/portfolio/slide-27.jpg" width="800" />
+<img src="docs/portfolio/slide-28.jpg" width="800" />
 
 </details>
 
 <details>
-<summary><b>05. 평가와 개선</b></summary>
+<summary><b>05. 평가와 배포</b></summary>
 <br>
 
-<img src="docs/portfolio/slide-26.jpg" width="800" />
-<img src="docs/portfolio/slide-27.jpg" width="800" />
-<img src="docs/portfolio/slide-28.jpg" width="800" />
+<img src="docs/portfolio/slide-29.jpg" width="800" />
+<img src="docs/portfolio/slide-30.jpg" width="800" />
+<img src="docs/portfolio/slide-31.jpg" width="800" />
+<img src="docs/portfolio/slide-32.jpg" width="800" />
+<img src="docs/portfolio/slide-33.jpg" width="800" />
 
 </details>
 
@@ -108,7 +113,7 @@
 | 분류 | 기능 |
 | --- | --- |
 | 📄 **등기부 판독** | PDF 업로드(PDFBox), 촬영 이미지 여러 장 OCR(Google Cloud Vision), 표제부·갑구·을구 구조화 |
-| 🚨 **위험 판단** | 규칙 16개 — 선순위 채권 비율, 전세가율·월세 환산, 압류·소유자 불일치, 소액임차인 최우선변제 등. 신호마다 근거 유형(사실 확인·법적 기준·정부 권고) 표시 |
+| 🚨 **위험 판단** | 규칙 15개(위험 신호 17종) — 선순위 채권 비율, 전세가율·월세 환산, 압류·소유자 불일치, 소액임차인 최우선변제 등. 신호마다 근거 유형(사실 확인·법적 기준·정부 권고) 표시 |
 | 🏢 **공공데이터** | 국토부 실거래가(아파트·오피스텔·연립다세대), 건축물대장 표제부·층별개요, 도로명주소, 브이월드 공시가격 |
 | 🏠 **다가구 조건부 분석** | 선순위 보증금 직접 입력, 토지 등기부 함께 분석, HUG 반환보증 가입 가능성 추정 — '안전' 판정은 내리지 않음 |
 | ✅ **체크리스트** | 계약 형태·권리관계에 따라 달라지는 직접 확인 항목 안내 |
