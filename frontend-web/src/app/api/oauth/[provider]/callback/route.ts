@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { getProvider } from '@/app/lib/oauth-providers'
+import { siteUrl } from '@/app/lib/site-url'
 
 const BACKEND_URL = process.env.BACKEND_API_URL ?? 'http://localhost:8080'
 const INTERNAL_SYNC_SECRET = process.env.INTERNAL_SYNC_SECRET ?? ''
@@ -32,7 +33,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
   const appChallenge = cookieStore.get('oauth_app_challenge')?.value
   cookieStore.delete('oauth_app_challenge')
 
-  const loginUrl = new URL('/login', request.url)
+  const loginUrl = siteUrl('/login', request)
   const fail = (message: string) => {
     if (appChallenge) return appRedirect({ error: message })
     loginUrl.searchParams.set('oauthError', message)
@@ -90,7 +91,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
       return appRedirect({ code })
     }
 
-    const response = NextResponse.redirect(new URL(redirectTo, request.url))
+    const response = NextResponse.redirect(siteUrl(redirectTo, request))
     response.cookies.set('session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

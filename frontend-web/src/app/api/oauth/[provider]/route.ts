@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { buildAuthorizeUrl, getProvider } from '@/app/lib/oauth-providers'
+import { siteUrl } from '@/app/lib/site-url'
 
 /**
  * "구글로 로그인" 버튼이 가리키는 주소. 여기서 CSRF 방지용 state를 만들어 쿠키에 잠깐
@@ -11,7 +12,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
   const { provider: providerName } = await params
   const provider = getProvider(providerName)
   if (!provider) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.redirect(siteUrl('/login', request))
   }
 
   const redirectTo = new URL(request.url).searchParams.get('redirect') ?? '/'
@@ -43,5 +44,5 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
   }
 
   const authorizeUrl = buildAuthorizeUrl(providerName, state)
-  return NextResponse.redirect(authorizeUrl ?? new URL('/login', request.url))
+  return NextResponse.redirect(authorizeUrl ?? siteUrl('/login', request))
 }

@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server'
+import { siteUrl } from '@/app/lib/site-url'
 
 const BACKEND_URL = process.env.BACKEND_API_URL ?? 'http://localhost:8080'
 
@@ -12,11 +13,11 @@ export async function GET(request: NextRequest) {
   const paymentKey = params.get('paymentKey')
   const orderId = params.get('orderId')
   const amount = Number(params.get('amount'))
-  const chooseUrl = new URL('/consult/choose', request.url)
+  const chooseUrl = siteUrl('/consult/choose', request)
 
   const token = request.cookies.get('session')?.value
   if (!token) {
-    const loginUrl = new URL('/login', request.url)
+    const loginUrl = siteUrl('/login', request)
     loginUrl.searchParams.set('redirect', '/consult/choose')
     return NextResponse.redirect(loginUrl)
   }
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
     const { productType } = (await response.json()) as { productType: string }
     if (productType === 'ANALYSIS') {
       // 분석 이용권은 분석 화면으로 돌려보낸다 — 다시 분석하면 이용권 1장이 쓰인다.
-      return NextResponse.redirect(new URL('/?analysisPaid=1#analyze', request.url))
+      return NextResponse.redirect(siteUrl('/?analysisPaid=1#analyze', request))
     }
   } catch {
     chooseUrl.searchParams.set('paymentError', '결제 승인 중 서버에 연결할 수 없습니다.')
