@@ -1,5 +1,5 @@
 # main에 올리거나 PR을 열 때마다 세 프로젝트의 검사를 자동으로 돌린다.
-# 외부 API 키는 필요 없다 — 백엔드 테스트는 외부 호출을 대체하고 인메모리 DB를 쓴다.
+# 외부 API 키는 필요 없다 — 백엔드 테스트는 외부 호출을 대체하고 인메모리 DB를 쓴다(운영 스키마 검사만 MySQL 컨테이너).
 # 웹 e2e(Playwright)는 백엔드·웹 서버와 .env가 있어야 해서 여기서는 돌리지 않는다.
 name: CI
 
@@ -14,6 +14,24 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # 운영 DB와 같은 MySQL에서 마이그레이션 스크립트와 엔티티가 맞는지 검사한다 (MySqlSchemaTest)
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: project_guard_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      MYSQL_TEST_URL: jdbc:mysql://localhost:3306/project_guard_test
+      MYSQL_TEST_USERNAME: root
+      MYSQL_TEST_PASSWORD: root
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4

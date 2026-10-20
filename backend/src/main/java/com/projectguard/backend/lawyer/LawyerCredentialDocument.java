@@ -35,9 +35,8 @@ public class LawyerCredentialDocument {
     @Column(nullable = false)
     private String contentType;
 
-    // @Lob을 쓰면 PostgreSQL에서 oid(대용량 객체 참조) 컬럼이 되어, 행을 지워도 실제 파일 데이터가
-    // pg_largeobject에 남고 트랜잭션 밖에서는 읽을 수도 없다. 길이를 지정한 일반 바이트 배열로 두면
-    // PostgreSQL은 bytea, H2는 binary varying이 된다. 길이는 업로드 한도(파일당 20MB)에 맞춘다.
+    // 길이는 업로드 한도(파일당 20MB)에 맞춘다. MySQL은 이 길이를 보고 longblob(mediumblob은 16MB까지)을,
+    // H2는 binary varying을 고른다. @Lob은 DB마다 다른 대용량 객체 방식(PostgreSQL은 oid)으로 바뀌어 쓰지 않는다.
     @Column(nullable = false, length = 20 * 1024 * 1024)
     private byte[] data;
 
