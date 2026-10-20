@@ -29,7 +29,10 @@ async function postForm(url: string, body: Record<string, string>): Promise<Reco
     body: new URLSearchParams(body),
   })
   if (!response.ok) {
-    throw new Error(`토큰 교환 실패 (${response.status})`)
+    // 각 사 오류 응답의 코드·설명만 남긴다(예: 카카오 KOE010 invalid_client). 토큰·시크릿은 응답에 없다.
+    const detail = (await response.json().catch(() => ({}))) as Record<string, unknown>
+    const reason = [detail.error_code, detail.error, detail.error_description].filter(Boolean).join(' ')
+    throw new Error(`토큰 교환 실패 (${response.status}) ${reason}`.trim())
   }
   return response.json()
 }

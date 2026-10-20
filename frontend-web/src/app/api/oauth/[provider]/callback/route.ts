@@ -107,7 +107,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
       maxAge: 60 * 60 * 24 * 7,
     })
     return response
-  } catch {
+  } catch (error) {
+    // 사용자에게는 일반 문구만 보여 주고, 원인(각 사 오류 코드 등)은 서버 로그로 남긴다.
+    console.error(`[oauth:${providerName}] 로그인 처리 실패:`, error instanceof Error ? error.message : error)
     return fail('로그인 처리 중 오류가 발생했습니다.')
   }
 }
