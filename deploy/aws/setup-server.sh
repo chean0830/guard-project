@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 새 EC2 서버(Ubuntu 24.04)에 한 번만 실행한다. 웹·백엔드·MySQL·Caddy를 한 대에 올린다 (docs/결정사항.md 58번).
 #   sudo DB_PASSWORD=... bash setup-server.sh <웹 주소> <API 주소>
-#   예) sudo DB_PASSWORD=... bash setup-server.sh 54-116-91-186.sslip.io api.54-116-91-186.sslip.io
+#   예) sudo DB_PASSWORD=... bash setup-server.sh project-guard.duckdns.org api.project-guard.duckdns.org
 # 실행 후 /etc/guard/backend.env, /etc/guard/web.env를 채우고 release.sh로 배포한다.
 set -euo pipefail
 
