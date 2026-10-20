@@ -46,14 +46,24 @@ public class BackendApplication {
 		Dotenv.configure().ignoreIfMissing().load().entries()
 				.forEach(entry -> System.setProperty(entry.getKey(), entry.getValue()));
 
-		Set<String> definedInEnvFile = readKeysDefinedInEnvFile();
-		for (String key : SENSITIVE_KEYS_REQUIRING_EXPLICIT_ENV) {
-			if (!definedInEnvFile.contains(key)) {
-				System.setProperty(key, "");
+		// 운영 서버(도커·클라우드)는 .env 파일 없이 OS 환경변수로 값을 넣는다. 거기서도 비워 버리면 결제 승인·관리자
+		// 로그인·메일이 모두 꺼진다(.env 없이 VAPID_PUBLIC_KEY를 넣고 띄워 빈 값이 나오는 것을 직접 확인).
+		// 그래서 APP_ENV=production인 서버에서만 OS 환경변수를 그대로 믿는다. 개발 PC는 이 값을 두지 않으므로
+		// 다른 프로젝트의 키가 섞여 드는 것을 막는 기존 동작이 기본값으로 유지된다.
+		if (!isProduction()) {
+			Set<String> definedInEnvFile = readKeysDefinedInEnvFile();
+			for (String key : SENSITIVE_KEYS_REQUIRING_EXPLICIT_ENV) {
+				if (!definedInEnvFile.contains(key)) {
+					System.setProperty(key, "");
+				}
 			}
 		}
 
 		SpringApplication.run(BackendApplication.class, args);
+	}
+
+	private static boolean isProduction() {
+		return "production".equalsIgnoreCase(System.getenv("APP_ENV"));
 	}
 
 	private static Set<String> readKeysDefinedInEnvFile() {

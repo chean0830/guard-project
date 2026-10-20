@@ -34,12 +34,17 @@ function readEnvLocal(): Record<string, string> {
   return entries;
 }
 
-const envLocal = readEnvLocal();
-for (const key of PROJECT_ONLY_KEYS) {
-  if (envLocal[key]) {
-    process.env[key] = envLocal[key];
-  } else {
-    delete process.env[key];
+// 배포 서버(Vercel·도커 등)는 .env.local 없이 환경변수로 값을 넣으므로, 거기서도 지우면 소셜 로그인·토스 결제창이
+// 모두 꺼진다. APP_ENV=production인 곳에서만 환경변수를 그대로 쓴다(백엔드와 같은 규칙, docs/결정사항.md 55번).
+// NEXT_PUBLIC_ 값은 빌드할 때 화면 코드에 박히므로 APP_ENV는 빌드 단계에도 있어야 한다.
+if (process.env.APP_ENV !== "production") {
+  const envLocal = readEnvLocal();
+  for (const key of PROJECT_ONLY_KEYS) {
+    if (envLocal[key]) {
+      process.env[key] = envLocal[key];
+    } else {
+      delete process.env[key];
+    }
   }
 }
 
