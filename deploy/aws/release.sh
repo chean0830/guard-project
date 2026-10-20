@@ -7,7 +7,8 @@ set -euo pipefail
 cd /opt/guard/src
 sudo -u guard git fetch --quiet origin main
 sudo -u guard git reset --hard --quiet origin/main
-echo "소스: $(git log --oneline -1)"
+# 저장소 주인이 guard라 root로 git을 부르면 "dubious ownership"으로 거부된다.
+echo "소스: $(sudo -u guard git log --oneline -1)"
 
 if [ -f /tmp/app.jar ]; then
   install -o guard -g guard -m 640 /tmp/app.jar /opt/guard/backend/app.jar
