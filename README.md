@@ -25,7 +25,26 @@
 <br>
 <a href="https://github.com/chean0830/guard-project/actions/workflows/ci.yml"><img src="https://github.com/chean0830/guard-project/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
 
+<br><br>
+
+### 🌐 [project-guard.duckdns.org](https://project-guard.duckdns.org) 에서 바로 체험해 보세요
+
 </div>
+
+<br>
+
+## 🔑 체험 계정
+
+| 구분 | 이메일 | 비밀번호 | 들어가는 곳 |
+| --- | --- | --- | --- |
+| 일반 회원 | `a@naver.com` | `12345678` | [로그인](https://project-guard.duckdns.org/login) |
+| 변호사 | `aa@naver.com` | `12345678` | [변호사 로그인](https://project-guard.duckdns.org/lawyer/login) |
+| 관리자 | `aaa@naver.com` | `12345678` | [로그인](https://project-guard.duckdns.org/login) 후 [관리자 화면](https://project-guard.duckdns.org/admin) |
+
+- 구글·카카오·네이버 소셜 로그인으로도 가입할 수 있습니다.
+- 결제는 토스페이먼츠 **테스트 키**라 실제로 청구되지 않습니다.
+- 회원 계정으로 상담을 문의하고 변호사 계정으로 답하면 실시간 채팅을 확인할 수 있습니다.
+- 여러 사람이 함께 쓰는 체험 계정이라 내용이 바뀌거나 초기화될 수 있습니다. 실제 개인정보는 올리지 마세요.
 
 <br>
 
@@ -143,6 +162,15 @@ guard-project
 - 실시간 채팅은 WebSocket으로 주고받으며, 브라우저는 Next.js 서버가 발급받은 1회용 입장권으로만 접속합니다.
 - 업로드한 등기부등본 원본은 메모리에서만 처리하고 저장하지 않습니다.
 
+### 운영 환경
+
+| 구성 | 내용 |
+| --- | --- |
+| 서버 | AWS EC2 (서울, t4g.small) 한 대에 웹 · 백엔드 · MySQL |
+| HTTPS | Caddy가 Let's Encrypt 인증서를 자동 발급 · 갱신, 웹(`project-guard.duckdns.org`)과 API(`api.project-guard.duckdns.org`)로 나눔 |
+| DB | MySQL 8.0, Flyway 마이그레이션(운영은 `validate`), 매일 자동 백업 14일 보관 |
+| 배포 | GitHub Actions CI 통과 후 서버 배포 스크립트 실행 — [`deploy/aws`](deploy/aws) |
+
 <br>
 
 ## 🚀 실행 방법
@@ -165,7 +193,7 @@ guard-project
 | `INTERNAL_SYNC_SECRET` | 웹 서버 ↔ 백엔드 내부 통신 비밀값 (양쪽 동일) |
 | `MAIL_*`, `VAPID_*`, `FCM_CREDENTIALS_PATH` | 메일, 웹 푸시, 앱 푸시 |
 
-> 개발 DB는 파일 기반 H2라 별도 설치가 필요 없습니다. 키가 없는 외부 연동은 조회만 건너뛰고 분석은 그대로 동작합니다.
+> 개발 DB는 파일 기반 H2라 별도 설치가 필요 없습니다(운영은 MySQL). 키가 없는 외부 연동은 조회만 건너뛰고 분석은 그대로 동작합니다.
 
 ### 3. 서버 실행
 
@@ -196,7 +224,7 @@ cd frontend-web && npm run test:e2e      # Playwright e2e 테스트
 | 문서 | 내용 |
 | --- | --- |
 | [기획서](docs/기획서.md) | 기획 배경, 기능 우선순위, 화면 구성, 보안·개인정보 체크리스트 |
-| [개발 결정사항](docs/결정사항.md) | 기획 대비 실제 개발 결정 54건과 그 이유, 트러블슈팅 기록 |
+| [개발 결정사항](docs/결정사항.md) | 기획 대비 실제 개발 결정 58건과 그 이유, 트러블슈팅 기록 (배포 과정 포함) |
 
 <br>
 
