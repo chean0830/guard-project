@@ -14,42 +14,6 @@ export type LawyerSignupState =
 
 export type LawyerLoginState = { status: 'idle' } | { status: 'error'; message: string }
 
-export async function lawyerSignupAction(
-  _prevState: LawyerSignupState,
-  formData: FormData,
-): Promise<LawyerSignupState> {
-  const documents = formData.getAll('documents').filter((f): f is File => f instanceof File && f.size > 0)
-  if (documents.length === 0) {
-    return { status: 'error', message: '변호사 자격을 확인할 수 있는 서류를 1개 이상 첨부해주세요.' }
-  }
-
-  const outgoing = new FormData()
-  for (const field of ['email', 'password', 'name', 'lawFirm', 'barNumber']) {
-    outgoing.append(field, String(formData.get(field) ?? ''))
-  }
-  for (const document of documents) {
-    outgoing.append('documents', document)
-  }
-
-  let response: Response
-  try {
-    response = await fetch(`${BACKEND_URL}/api/lawyer/auth/signup`, {
-      method: 'POST',
-      body: outgoing,
-    })
-  } catch {
-    return { status: 'error', message: '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.' }
-  }
-
-  if (!response.ok) {
-    const message = await response.text()
-    return { status: 'error', message: message || '가입 신청에 실패했습니다.' }
-  }
-
-  const data = (await response.json()) as { message: string }
-  return { status: 'success', message: data.message }
-}
-
 export async function lawyerLoginAction(
   redirectTo: string,
   _prevState: LawyerLoginState,

@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { useId, useRef, useState } from 'react'
 import { useActionState } from 'react'
-import { lawyerSignupAction, type LawyerSignupState } from '@/app/lib/lawyer-auth-action'
+import type { LawyerSignupState } from '@/app/lib/lawyer-auth-action'
+import { submitLawyerSignup } from '@/app/lib/lawyer-signup-upload'
 
 const initialState: LawyerSignupState = { status: 'idle' }
 
@@ -11,7 +12,7 @@ const inputStyle =
   'w-full rounded-xl border border-zinc-300 bg-transparent px-3.5 py-2.5 text-sm outline-none transition-colors focus:border-orange-400 focus:ring-2 focus:ring-orange-100 dark:border-zinc-700 dark:focus:ring-orange-900/30'
 
 export function LawyerSignupForm() {
-  const [state, formAction, pending] = useActionState(lawyerSignupAction, initialState)
+  const [state, formAction, pending] = useActionState(submitLawyerSignup, initialState)
   const [documents, setDocuments] = useState<File[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const fileInputId = useId()

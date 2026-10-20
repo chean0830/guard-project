@@ -85,72 +85,24 @@ export type AnalyzeState =
 
 const BACKEND_URL = process.env.BACKEND_API_URL ?? 'http://localhost:8080'
 
-export async function analyzeAction(_prevState: AnalyzeState, formData: FormData): Promise<AnalyzeState> {
-  const files = formData.getAll('files').filter((f): f is File => f instanceof File && f.size > 0)
-  if (files.length === 0) {
-    return { status: 'error', message: '등기부등본 파일을 1장 이상 선택해주세요.' }
-  }
-
-  const propertyType = formData.get('propertyType')
-  const contractType = formData.get('contractType')
-  const depositAmount = formData.get('depositAmount')
-  if (!propertyType || !contractType || !depositAmount) {
-    return { status: 'error', message: '부동산 유형, 계약 형태, 보증금을 입력해주세요.' }
-  }
-
-  const outgoing = new FormData()
-  for (const file of files) {
-    outgoing.append('files', file)
-  }
-  outgoing.append('propertyType', String(propertyType))
-  outgoing.append('contractType', String(contractType))
-  outgoing.append('depositAmount', String(depositAmount))
-  for (const file of formData.getAll('landFiles')) {
-    if (file instanceof File && file.size > 0) {
-      outgoing.append('landFiles', file)
-    }
-  }
-
-  for (const field of [
-    'monthlyRent',
-    'buildingName',
-    'exclusiveAreaSqm',
-    'declaredLandlordName',
-    'declaredAddress',
-    'priorDepositTotal',
-    'priorDepositSource',
-    'buildingPrice',
-    'violationBuilding',
-    'roomCount',
-  ]) {
-    const value = formData.get(field)
-    if (value) {
-      outgoing.append(field, String(value))
-    }
-  }
-
+/**
+ * 등기부 파일을 브라우저가 백엔드로 바로 올릴 때 쓸 1회용 입장권을 받는다(analyze-upload.ts).
+ * 파일을 이 서버로 받아 넘기면 Server Action 요청 한도(1MB)와 배포 환경(Vercel 4.5MB)에 걸린다.
+ * 로그인 쿠키는 httpOnly라 여기서만 꺼낼 수 있어 입장권 발급만 서버가 맡는다.
+ */
+export async function issueAnalyzeUploadTicket(): Promise<{ ticket: string } | { error: string }> {
+  const token = (await cookies()).get('session')?.value
   let response: Response
   try {
-    // 분석은 아이디당 무료 5회라 로그인 세션을 함께 보낸다.
-    const token = (await cookies()).get('session')?.value
-    response = await fetch(`${BACKEND_URL}/api/analyze`, {
+    response = await fetch(`${BACKEND_URL}/api/analyze/upload-ticket`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: outgoing,
     })
   } catch {
-    return { status: 'error', message: '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.' }
+    return { error: '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.' }
   }
-
-  if (response.status === 402) {
-    return { status: 'payment_required', message: await response.text(), loggedIn: true }
-  }
-
   if (!response.ok) {
-    const message = await response.text()
-    return { status: 'error', message: message || '분석에 실패했습니다. 다시 시도해주세요.' }
+    return { error: (await response.text()) || '분석을 시작하지 못했습니다. 다시 시도해주세요.' }
   }
-
-  const result = (await response.json()) as AnalyzeResult
-  return { status: 'success', result }
+  return (await response.json()) as { ticket: string }
 }

@@ -32,7 +32,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -66,6 +68,9 @@ class AnalyzeControllerTest {
 
     @MockitoBean
     private OfficialHousePriceService officialHousePriceService;
+
+    @MockitoBean
+    private AnalysisUploadTicketService uploadTicketService;
 
     private MockMultipartFile samplePdf() {
         return new MockMultipartFile("files", "test.pdf", "application/pdf", "%PDF-1.4 dummy".getBytes());
@@ -271,5 +276,50 @@ class AnalyzeControllerTest {
                 .andExpect(jsonPath("$.landRegistry.uniqueNumber").value("2"));
 
         verify(riskAssessmentService).assess(argThat(input -> input.landRegistry() == land));
+    }
+
+    @Test
+    void 웹_업로드_입장권이_있으면_입장권에_묶인_세션으로_이용권을_확인한다() throws Exception {
+        when(uploadTicketService.consume("ticket-1")).thenReturn(Optional.of("session-1"));
+        when(analysisAccessService.authorize("session-1")).thenThrow(new AnalysisPaymentRequiredException());
+
+        mockMvc.perform(multipart("/api/analyze")
+                        .file(samplePdf())
+                        .param("propertyType", "APARTMENT")
+                        .param("contractType", "JEONSE")
+                        .param("depositAmount", "200000000")
+                        .header("X-Upload-Ticket", "ticket-1"))
+                .andExpect(status().isPaymentRequired());
+
+        verify(analysisAccessService).authorize("session-1");
+    }
+
+    @Test
+    void 만료되었거나_이미_쓴_입장권이면_401을_반환한다() throws Exception {
+        when(uploadTicketService.consume("used")).thenReturn(Optional.empty());
+
+        mockMvc.perform(multipart("/api/analyze")
+                        .file(samplePdf())
+                        .param("propertyType", "APARTMENT")
+                        .param("contractType", "JEONSE")
+                        .param("depositAmount", "200000000")
+                        .header("X-Upload-Ticket", "used"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("업로드 시간이 지났어요")));
+    }
+
+    @Test
+    void 브라우저_직접_업로드는_프론트엔드_주소에서만_허용한다() throws Exception {
+        mockMvc.perform(options("/api/analyze")
+                        .header("Origin", "http://localhost:3000")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "x-upload-ticket"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"));
+
+        mockMvc.perform(options("/api/analyze")
+                        .header("Origin", "https://evil.example")
+                        .header("Access-Control-Request-Method", "POST"))
+                .andExpect(status().isForbidden());
     }
 }

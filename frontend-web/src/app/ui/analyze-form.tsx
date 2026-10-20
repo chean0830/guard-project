@@ -2,7 +2,8 @@
 
 import { useId, useRef, useState } from 'react'
 import { useActionState } from 'react'
-import { analyzeAction, type AnalyzeState } from '@/app/lib/analyze-action'
+import type { AnalyzeState } from '@/app/lib/analyze-action'
+import { submitAnalysis } from '@/app/lib/analyze-upload'
 import { AnalyzeResultView } from '@/app/ui/analyze-result'
 import { AnalysisPaymentRequired } from '@/app/ui/analysis-payment-button'
 import { LoginRequiredDialog } from '@/app/ui/login-required-dialog'
@@ -101,7 +102,7 @@ const MAX_FILES_PER_REGISTRY = 5
 const FILE_LIMIT_NOTICE = `한 번에 ${MAX_FILES_PER_REGISTRY}장까지 올릴 수 있어요. 쪽수가 더 많으면 인터넷등기소에서 받은 PDF 파일 1개로 올려주세요.`
 
 export function AnalyzeForm() {
-  const [state, formAction, pending] = useActionState(analyzeAction, initialState)
+  const [state, formAction, pending] = useActionState(submitAnalysis, initialState)
   const [files, setFiles] = useState<File[]>([])
   const [contractType, setContractType] = useState<'JEONSE' | 'WOLSE'>('JEONSE')
   const [propertyType, setPropertyType] = useState<PropertyType>('APARTMENT')

@@ -1,5 +1,6 @@
 package com.projectguard.backend.api;
 
+import com.projectguard.backend.auth.InvalidCredentialsException;
 import com.projectguard.backend.checklist.ChecklistItem;
 import com.projectguard.backend.checklist.ChecklistService;
 import com.projectguard.backend.common.ContractType;
@@ -65,6 +66,7 @@ public class AnalyzeController {
     private final RiskAssessmentService riskAssessmentService;
     private final ChecklistService checklistService;
     private final OfficialHousePriceService officialHousePriceService;
+    private final AnalysisUploadTicketService uploadTicketService;
 
     public AnalyzeController(
             RegistryAnalysisService registryAnalysisService,
@@ -73,7 +75,8 @@ public class AnalyzeController {
             RiskAssessmentService riskAssessmentService,
             ChecklistService checklistService,
             AnalysisAccessService analysisAccessService,
-            OfficialHousePriceService officialHousePriceService
+            OfficialHousePriceService officialHousePriceService,
+            AnalysisUploadTicketService uploadTicketService
     ) {
         this.registryAnalysisService = registryAnalysisService;
         this.marketPriceService = marketPriceService;
@@ -82,6 +85,18 @@ public class AnalyzeController {
         this.checklistService = checklistService;
         this.analysisAccessService = analysisAccessService;
         this.officialHousePriceService = officialHousePriceService;
+        this.uploadTicketService = uploadTicketService;
+    }
+
+    public record UploadTicketResponse(String ticket) {
+    }
+
+    /** 웹 브라우저가 등기부 파일을 이 서버로 바로 올릴 때 쓸 1회용 입장권 (AnalysisUploadTicketService 참고). */
+    @PostMapping("/analyze/upload-ticket")
+    public UploadTicketResponse issueUploadTicket(
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        return new UploadTicketResponse(uploadTicketService.issue(bearer(authorization)));
     }
 
     @PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -101,14 +116,20 @@ public class AnalyzeController {
             @RequestParam(value = "violationBuilding", required = false) ViolationBuildingAnswer violationBuilding,
             @RequestParam(value = "landFiles", required = false) List<MultipartFile> landFiles,
             @RequestParam(value = "roomCount", required = false) Integer roomCount,
-            @RequestHeader(value = "Authorization", required = false) String authorization
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestHeader(value = "X-Upload-Ticket", required = false) String uploadTicket
     ) throws IOException {
         if (files == null || files.isEmpty()) {
             throw new NotRegistryDocumentException("등기부등본 파일을 1장 이상 업로드해주세요.");
         }
         requireWithinFileLimit(files, "등기부등본");
         requireWithinFileLimit(landFiles, "토지 등기부등본");
-        AnalysisAccessService.Access access = analysisAccessService.authorize(bearer(authorization));
+        // 웹 브라우저는 입장권으로, 앱은 로그인 토큰으로 직접 올린다.
+        String sessionToken = uploadTicket != null
+                ? uploadTicketService.consume(uploadTicket)
+                        .orElseThrow(() -> new InvalidCredentialsException("업로드 시간이 지났어요. 다시 시도해주세요."))
+                : bearer(authorization);
+        AnalysisAccessService.Access access = analysisAccessService.authorize(sessionToken);
         try {
             return analyze(files, propertyType, contractType, depositAmount, monthlyRent, buildingName, exclusiveAreaSqm,
                     declaredLandlordName, declaredAddress, priorDepositTotal, priorDepositSource, buildingPrice,
